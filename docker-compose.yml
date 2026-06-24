@@ -40,22 +40,13 @@ services:
 
   # ---- Apache Solr ----
   solr:
-    image: solr:9.6
+    image: dspace/dspace-solr:dspace-7_x
     container_name: dspace-solr
     restart: unless-stopped
     networks:
       - dspace
     volumes:
       - solrdata:/var/solr
-      - ./config/solr-cores:/opt/solr/server/solr/configsets/dspace:ro
-    command: >
-      bash -c "
-        precreate-core search  /opt/solr/server/solr/configsets/dspace 2>/dev/null || true;
-        precreate-core statistics /opt/solr/server/solr/configsets/dspace 2>/dev/null || true;
-        precreate-core authority /opt/solr/server/solr/configsets/dspace 2>/dev/null || true;
-        precreate-core oai /opt/solr/server/solr/configsets/dspace 2>/dev/null || true;
-        solr-foreground
-      "
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8983/solr/"]
       interval: 15s

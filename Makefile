@@ -5,7 +5,7 @@
 # =================================================================
 
 .PHONY: help install start stop restart status logs backup verify \
-        fix-ssh check setup-collections ssl clean
+        fix-ssh check setup-collections ssl reindex clean
 
 SHELL := /bin/bash
 HOST  ?= 192.168.26.3

@@ -67,8 +67,9 @@ if [ ! -f ".env" ]; then
     sed -i "s|DSPACE_ADMIN_EMAIL=.*|DSPACE_ADMIN_EMAIL=${ADMIN_EMAIL}|" .env
 
     # Update local.cfg with actual values
-    sed -i "s|192.168.26.3|${SERVER_HOST}|g" config/local.cfg
-    sed -i "s|DSpaceHrep2024!|${DB_PASS}|g" config/local.cfg
+    sed -i "s|%%SERVER_HOST%%|${SERVER_HOST}|g" config/local.cfg
+    sed -i "s|%%DB_PASSWORD%%|${DB_PASS}|g" config/local.cfg
+    sed -i "s|%%SMTP_HOST%%|${SMTP_HOST:-localhost}|g" config/local.cfg
 fi
 
 # ---- Pull images and start ----
@@ -121,3 +122,8 @@ echo "    docker compose restart               # restart all"
 echo "    docker compose down                  # stop all"
 echo ""
 echo "  Next: Run  scripts/10-setup-collections.sh  to create communities"
+echo ""
+echo "================================================================"
+echo "  IMPORTANT: Enable HTTPS now to protect your repository!"
+echo "    make ssl"
+echo "================================================================"
