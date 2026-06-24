@@ -1,0 +1,35 @@
+# Secrets — never commit these
+.env
+*.key
+*.pem
+*.crt
+*.p12
+*.jks
+
+# Logs
+*.log
+logs/
+/tmp/
+
+# Build artifacts
+/build/
+target/
+node_modules/
+dist/
+.next/
+
+# DSpace runtime (managed on server, not in git)
+/dspace/
+assetstore/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
