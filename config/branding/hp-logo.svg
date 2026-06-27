@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 56" height="44">
+  <rect x="0" y="2" width="52" height="52" rx="5" fill="#FFD100"/>
+  <text x="5" y="44" font-family="Arial,sans-serif" font-size="38" font-weight="900" fill="#006633">HP</text>
+  <rect x="60" y="2" width="2" height="52" fill="#006633" opacity="0.3"/>
+  <text x="72" y="22" font-family="Arial,sans-serif" font-size="15" font-weight="700" fill="#006633" letter-spacing="1">HARARE POLYTECHNIC</text>
+  <text x="72" y="44" font-family="Arial,sans-serif" font-size="11" fill="#444">Institutional Repository</text>
+</svg>

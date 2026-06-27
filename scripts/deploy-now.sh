@@ -3,22 +3,22 @@
 #  ONE-COMMAND DSpace 7.6 Deploy — Harare Polytechnic
 #  Fully non-interactive. Set variables below then run.
 #
-#  USAGE (paste entire block into Termius):
-#
-#  DB_PASS="YourDbPass123!" \
+#  USAGE:
+#  SERVER_IP="192.168.26.3" \
+#  DB_PASS="YourDbPass" \
 #  ADMIN_EMAIL="library@hrepoly.ac.zw" \
-#  ADMIN_PASS="YourAdminPass123!" \
-#  bash <(curl -fsSL https://raw.githubusercontent.com/wgmasvix-hue/harare-polytechnic-dspace-installation-/claude/dspace-harare-polytechnic-install-0asotw/scripts/deploy-now.sh)
-#
+#  ADMIN_PASS="YourAdminPass" \
+#  bash <(curl -fsSL https://raw.githubusercontent.com/wgmasvix-hue/harare-polytechnic-dspace-installation-/main/scripts/deploy-now.sh)
 # =================================================================
 
 set -euo pipefail
 
-# ---- Config (auto-detected or from environment) ----
-SERVER_IP=$(curl -sf https://api.ipify.org 2>/dev/null || hostname -I | awk '{print $1}')
-DB_PASS="${DB_PASS:-DSpace@HararePolytechnic2024!}"
+# ---- Config (from environment or auto-detected) ----
+# SERVER_IP can be pre-set (e.g. for local installs); otherwise auto-detects public IP
+SERVER_IP="${SERVER_IP:-$(curl -sf https://api.ipify.org 2>/dev/null || hostname -I | awk '{print $1}')}"
+DB_PASS="${DB_PASS:-DSpaceHarare2024}"
 ADMIN_EMAIL="${ADMIN_EMAIL:-library@hrepoly.ac.zw}"
-ADMIN_PASS="${ADMIN_PASS:-Admin@HararePolytechnic2024!}"
+ADMIN_PASS="${ADMIN_PASS:-Admin@Hrep2024}"
 INSTALL_DIR="/opt/dspace-install"
 
 G='\033[0;32m'; B='\033[0;34m'; R='\033[0;31m'; N='\033[0m'
@@ -68,12 +68,7 @@ DSPACE_ADMIN_PASS=${ADMIN_PASS}
 SMTP_HOST=localhost
 HANDLE_PREFIX=123456789
 ENV
-
-# Update local.cfg with actual IP and password
-sed -i "s|144\.91\.125\.128|${SERVER_IP}|g;
-        s|192\.168\.26\.3|${SERVER_IP}|g;
-        s|DSpaceHrep2024!|${DB_PASS}|g" config/local.cfg
-ok ".env and local.cfg configured"
+ok ".env written (SERVER_HOST=${SERVER_IP})"
 
 # ---- 5. UFW firewall ----
 log "Configuring firewall..."
@@ -88,24 +83,40 @@ if command -v ufw &>/dev/null; then
     ok "Firewall: 22, 80, 443 open"
 fi
 
-# ---- 6. Pull Docker images ----
+# ---- 6. Stop native nginx if running (frees port 80) ----
+systemctl stop nginx 2>/dev/null || true
+systemctl disable nginx 2>/dev/null || true
+fuser -k 80/tcp 2>/dev/null || true
+
+# ---- 7. Pull Docker images ----
 log "Pulling Docker images (5-10 min on first run)..."
-docker compose pull 2>&1 | grep -E "Pulling|Pulled|already" | head -20 || true
+docker compose pull 2>&1 | grep -E 'Pulling|Pulled|already' | head -20 || true
 ok "Images ready"
 
-# ---- 7. Start services ----
+# ---- 8. Start services ----
 log "Starting DSpace services..."
 docker compose down --remove-orphans -q 2>/dev/null || true
 docker compose up -d
 ok "Containers started"
 
-# ---- 8. Wait for DSpace backend ----
+# ---- 9. Create Solr cores (first run) ----
+log "Initialising Solr cores..."
+sleep 20
+docker exec dspace-solr bash -c "
+  precreate-core search     /opt/solr/server/solr/search     2>/dev/null || true
+  precreate-core statistics /opt/solr/server/solr/statistics 2>/dev/null || true
+  precreate-core authority  /opt/solr/server/solr/authority  2>/dev/null || true
+  precreate-core oai        /opt/solr/server/solr/oai        2>/dev/null || true
+" 2>/dev/null && ok "Solr cores ready" || ok "Solr cores (may already exist)"
+docker restart dspace-backend -q 2>/dev/null || true
+
+# ---- 10. Wait for DSpace backend ----
 log "Waiting for DSpace to initialise (3-4 minutes)..."
-MAX=300; ELAPSED=0
+MAX=360; ELAPSED=0
 printf "  Progress: "
 until curl -sf http://localhost:8080/server/api &>/dev/null; do
     printf "."
-    sleep 5; ELAPSED=$((ELAPSED+5))
+    sleep 10; ELAPSED=$((ELAPSED+10))
     if [ $ELAPSED -ge $MAX ]; then
         echo ""
         die "Timed out after ${MAX}s. Check: docker compose logs dspace-backend"
@@ -114,7 +125,7 @@ done
 echo " done"
 ok "DSpace REST API is responding"
 
-# ---- 9. Create admin account ----
+# ---- 11. Create admin account ----
 log "Creating administrator account..."
 docker exec dspace-backend /dspace/bin/dspace create-administrator \
     -e "$ADMIN_EMAIL" \
@@ -123,7 +134,7 @@ docker exec dspace-backend /dspace/bin/dspace create-administrator \
     -p "$ADMIN_PASS" \
     -c en 2>/dev/null && ok "Admin account created" || ok "Admin may already exist"
 
-# ---- 10. Initial Solr index ----
+# ---- 12. Initial Solr index ----
 log "Running initial search index..."
 docker exec dspace-backend /dspace/bin/dspace index-discovery -b &>/dev/null &
 ok "Indexing started"

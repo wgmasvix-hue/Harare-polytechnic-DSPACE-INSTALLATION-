@@ -1,0 +1,58 @@
+/* ================================================
+   Harare Polytechnic — DSpace 7.6 Custom Branding
+   Primary: #006633 (green)  Accent: #FFD100 (gold)
+   ================================================ */
+
+/* --- Navigation bar --- */
+.navbar, .navbar.navbar-dark, header nav, nav.navbar {
+  background: linear-gradient(90deg,#006633 0%,#004d26 100%) !important;
+  border-bottom: 3px solid #FFD100;
+}
+.navbar-brand { color:#FFD100 !important; font-weight:700; }
+.navbar-dark .navbar-nav .nav-link { color:rgba(255,255,255,.9) !important; }
+.navbar-dark .navbar-nav .nav-link:hover { color:#FFD100 !important; }
+
+/* --- HP Logo in header --- */
+ds-header .navbar-brand > *,
+.navbar-brand img, .navbar-brand svg { opacity:0; width:0; }
+.navbar-brand::before {
+  content:'';
+  display:inline-block;
+  width:200px;
+  height:36px;
+  background:url('/hp-logo.svg') no-repeat left center;
+  background-size:contain;
+  margin-right:8px;
+  vertical-align:middle;
+}
+
+/* --- Buttons --- */
+.btn-primary, .btn-dark {
+  background-color:#006633 !important;
+  border-color:#005529 !important;
+}
+.btn-primary:hover, .btn-dark:hover {
+  background-color:#005529 !important;
+  border-color:#004020 !important;
+}
+
+/* --- Home page hero --- */
+.jumbotron, ds-home-page .jumbotron {
+  background:linear-gradient(135deg,#006633,#004d26) !important;
+  color:#fff;
+}
+.jumbotron h2, .jumbotron p { color:#fff !important; }
+
+/* --- Search button --- */
+.search-button, [class*='search-form'] .btn { color:#333 !important; }
+
+/* --- Links --- */
+main a:not(.btn):not(.nav-link):not(.dropdown-item) { color:#006633; }
+main a:hover:not(.btn):not(.nav-link) { color:#004d26; }
+
+/* --- Footer --- */
+footer, ds-footer { border-top:4px solid #006633 !important; }
+
+/* --- Breadcrumb & badges --- */
+.badge-primary, .badge.bg-primary { background-color:#006633 !important; }
+.breadcrumb-item.active { color:#006633; }

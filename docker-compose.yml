@@ -1,7 +1,6 @@
 # =================================================================
 #  Harare Polytechnic DSpace 7.6 — Docker Compose
-#  Run: docker compose up -d
-#  UI:  http://144.91.125.128/
+#  Uses .env for SERVER_HOST (auto-set by deploy-now.sh)
 # =================================================================
 
 networks:
@@ -15,48 +14,40 @@ volumes:
 
 services:
 
-  # ---- PostgreSQL Database ----
   postgres:
     image: postgres:15-alpine
     container_name: dspace-db
     restart: unless-stopped
-    networks:
-      - dspace
+    networks: [dspace]
     environment:
       POSTGRES_DB: dspace
       POSTGRES_USER: dspace
       POSTGRES_PASSWORD: DSpaceHarare2024
-    volumes:
-      - pgdata:/var/lib/postgresql/data
+    volumes: [pgdata:/var/lib/postgresql/data]
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U dspace -d dspace"]
+      test: ["CMD-SHELL","pg_isready -U dspace -d dspace"]
       interval: 10s
       timeout: 5s
       retries: 10
 
-  # ---- Apache Solr (DSpace image with pre-built cores) ----
   solr:
     image: dspace/dspace-solr:dspace-7.6
     container_name: dspace-solr
     restart: unless-stopped
-    networks:
-      - dspace
-    volumes:
-      - solrdata:/var/solr/data
+    networks: [dspace]
+    volumes: [solrdata:/var/solr/data]
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8983/solr/search/admin/ping"]
+      test: ["CMD","curl","-f","http://localhost:8983/solr/"]
       interval: 15s
       timeout: 10s
       retries: 15
       start_period: 30s
 
-  # ---- DSpace Backend (REST API / Tomcat) ----
   dspace:
     image: dspace/dspace:dspace-7.6
     container_name: dspace-backend
     restart: unless-stopped
-    networks:
-      - dspace
+    networks: [dspace]
     depends_on:
       postgres:
         condition: service_healthy
@@ -67,57 +58,47 @@ services:
       db__P__username: dspace
       db__P__password: DSpaceHarare2024
       solr__P__server: "http://solr:8983/solr"
-      dspace__P__server__url: "http://144.91.125.128/server"
-      dspace__P__ui__url: "http://144.91.125.128"
+      dspace__P__server__url: "http://${SERVER_HOST:-144.91.125.128}/server"
+      dspace__P__ui__url: "http://${SERVER_HOST:-144.91.125.128}"
       dspace__P__name: "Harare Polytechnic Institutional Repository"
-      dspace__P__hostname: "144.91.125.128"
+      dspace__P__hostname: "${SERVER_HOST:-144.91.125.128}"
       mail__P__server: "localhost"
       mail__P__from__address: "dspace@hrepoly.ac.zw"
       mail__P__admin: "library@hrepoly.ac.zw"
       handle__P__prefix: "123456789"
-    volumes:
-      - assetstore:/dspace/assetstore
-    ports:
-      - "127.0.0.1:8080:8080"
+    volumes: [assetstore:/dspace/assetstore]
+    ports: ["127.0.0.1:8080:8080"]
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/server/api"]
+      test: ["CMD","curl","-f","http://localhost:8080/server/api"]
       interval: 30s
       timeout: 15s
       retries: 20
       start_period: 180s
 
-  # ---- DSpace Angular UI (Frontend) ----
   dspace-ui:
     image: dspace/dspace-angular:dspace-7.6
     container_name: dspace-frontend
     restart: unless-stopped
-    networks:
-      - dspace
-    depends_on:
-      - dspace
+    networks: [dspace]
+    depends_on: [dspace]
     environment:
       DSPACE_UI_SSL: "false"
-      DSPACE_UI_HOST: "144.91.125.128"
+      DSPACE_UI_HOST: "${SERVER_HOST:-144.91.125.128}"
       DSPACE_UI_PORT: "4000"
       DSPACE_UI_NAMESPACE: "/"
       DSPACE_REST_SSL: "false"
-      DSPACE_REST_HOST: "144.91.125.128"
+      DSPACE_REST_HOST: "${SERVER_HOST:-144.91.125.128}"
       DSPACE_REST_PORT: "80"
       DSPACE_REST_NAMESPACE: "/server"
-    ports:
-      - "127.0.0.1:4000:4000"
+    ports: ["127.0.0.1:4000:4000"]
 
-  # ---- Nginx Reverse Proxy ----
   nginx:
     image: nginx:alpine
     container_name: dspace-nginx
     restart: unless-stopped
-    networks:
-      - dspace
-    depends_on:
-      - dspace
-      - dspace-ui
+    networks: [dspace]
+    depends_on: [dspace,dspace-ui]
     volumes:
       - ./config/nginx.conf:/etc/nginx/conf.d/default.conf:ro
-    ports:
-      - "80:80"
+      - ./config/branding:/etc/nginx/branding:ro
+    ports: ["80:80"]
