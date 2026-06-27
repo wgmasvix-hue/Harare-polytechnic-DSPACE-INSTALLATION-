@@ -2,7 +2,7 @@
 # =================================================================
 #  DSpace 7.6 — Contabo VPS Deployment Script
 #  Target: Ubuntu 22.04, 8GB RAM, Public IP
-#  Harare Polytechnic Institutional Repository
+#  Public-ready institutional repository deployment
 #
 #  Run as root on your Contabo VM:
 #    ssh root@YOUR_CONTABO_IP
@@ -28,7 +28,7 @@ PUBLIC_IP=$(curl -sf https://api.ipify.org 2>/dev/null || \
 
 echo ""
 echo "╔══════════════════════════════════════════════════════════════╗"
-echo "║   HARARE POLYTECHNIC — DSpace 7.6 on Contabo VPS           ║"
+echo "║   DSpace 7.6 on Contabo VPS                                ║"
 echo "║   OS:  $PRETTY_NAME"
 echo "║   RAM: $(free -h | awk '/^Mem:/{print $2}') total"
 echo "║   IP:  $PUBLIC_IP (detected)"
@@ -144,7 +144,8 @@ ENV
 
 # Update local.cfg with actual IP
 sed -i "s|192\.168\.26\.3|${SERVER_IP}|g" config/local.cfg
-sed -i "s|DSpaceHrep2024!|${DB_PASS}|g"  config/local.cfg
+sed -i "s|repo\\.example\\.edu|${SERVER_IP}|g" config/local.cfg
+sed -i "s|change-this-database-password|${DB_PASS}|g"  config/local.cfg
 ok "Configuration written"
 
 # ================================================================

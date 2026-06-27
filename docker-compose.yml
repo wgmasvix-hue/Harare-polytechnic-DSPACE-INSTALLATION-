@@ -1,7 +1,7 @@
 # =================================================================
 #  Harare Polytechnic DSpace 7.6 — Docker Compose
 #  Run: docker compose up -d
-#  UI:  http://144.91.125.128/
+#  UI:  http://${SERVER_HOST}/
 # =================================================================
 
 networks:
@@ -25,7 +25,7 @@ services:
     environment:
       POSTGRES_DB: dspace
       POSTGRES_USER: dspace
-      POSTGRES_PASSWORD: DSpaceHarare2024
+      POSTGRES_PASSWORD: ${DSPACE_DB_PASSWORD:-change-this-database-password}
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -65,16 +65,16 @@ services:
     environment:
       db__P__url: "jdbc:postgresql://postgres:5432/dspace"
       db__P__username: dspace
-      db__P__password: DSpaceHarare2024
+      db__P__password: ${DSPACE_DB_PASSWORD:-change-this-database-password}
       solr__P__server: "http://solr:8983/solr"
-      dspace__P__server__url: "http://144.91.125.128/server"
-      dspace__P__ui__url: "http://144.91.125.128"
-      dspace__P__name: "Harare Polytechnic Institutional Repository"
-      dspace__P__hostname: "144.91.125.128"
-      mail__P__server: "localhost"
-      mail__P__from__address: "dspace@hrepoly.ac.zw"
-      mail__P__admin: "library@hrepoly.ac.zw"
-      handle__P__prefix: "123456789"
+      dspace__P__server__url: "http://${SERVER_HOST:-localhost}/server"
+      dspace__P__ui__url: "http://${SERVER_HOST:-localhost}"
+      dspace__P__name: "${DSPACE_SITE_NAME:-Harare Polytechnic Institutional Repository}"
+      dspace__P__hostname: "${SERVER_HOST:-localhost}"
+      mail__P__server: "${SMTP_HOST:-localhost}"
+      mail__P__from__address: "${SMTP_FROM_ADDRESS:-dspace@example.edu}"
+      mail__P__admin: "${DSPACE_ADMIN_EMAIL:-admin@example.edu}"
+      handle__P__prefix: "${HANDLE_PREFIX:-123456789}"
     volumes:
       - assetstore:/dspace/assetstore
     ports:
@@ -97,11 +97,11 @@ services:
       - dspace
     environment:
       DSPACE_UI_SSL: "false"
-      DSPACE_UI_HOST: "144.91.125.128"
+      DSPACE_UI_HOST: "${SERVER_HOST:-localhost}"
       DSPACE_UI_PORT: "4000"
       DSPACE_UI_NAMESPACE: "/"
       DSPACE_REST_SSL: "false"
-      DSPACE_REST_HOST: "144.91.125.128"
+      DSPACE_REST_HOST: "${SERVER_HOST:-localhost}"
       DSPACE_REST_PORT: "80"
       DSPACE_REST_NAMESPACE: "/server"
     ports:

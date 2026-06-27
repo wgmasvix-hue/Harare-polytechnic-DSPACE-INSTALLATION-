@@ -8,8 +8,9 @@ BLUE='\033[0;34m'; GREEN='\033[0;32m'; NC='\033[0m'
 log() { echo -e "${BLUE}[$(date +%H:%M:%S)]${NC} $1"; }
 ok()  { echo -e "${GREEN}[OK]${NC} $1"; }
 
-SERVER_HOSTNAME="${DSPACE_HOSTNAME:-192.168.26.3}"
-SERVER_NAME="${DSPACE_SERVER_NAME:-hrepolyREP}"
+DEFAULT_HOST="$(hostname -I 2>/dev/null | awk '{print $1}')"
+SERVER_HOSTNAME="${DSPACE_HOSTNAME:-${DEFAULT_HOST:-localhost}}"
+SERVER_NAME="${DSPACE_SERVER_NAME:-repository-host}"
 
 log "Configuring Nginx reverse proxy..."
 

@@ -1,6 +1,6 @@
 #!/bin/bash
 # Step 5: Install DSpace Angular frontend (UI)
-# Run as root on hrepolyREP (192.168.26.3)
+# Run as root on your target host
 
 set -euo pipefail
 
@@ -10,7 +10,8 @@ ok()  { echo -e "${GREEN}[OK]${NC} $1"; }
 
 DSPACE_VERSION="7.6.3"
 UI_DIR="/opt/dspace-ui"
-SERVER_HOSTNAME="${DSPACE_HOSTNAME:-192.168.26.3}"
+DEFAULT_HOST="$(hostname -I 2>/dev/null | awk '{print $1}')"
+SERVER_HOSTNAME="${DSPACE_HOSTNAME:-${DEFAULT_HOST:-localhost}}"
 NODE_VERSION=18
 
 log "=== DSpace Angular UI Installation ==="

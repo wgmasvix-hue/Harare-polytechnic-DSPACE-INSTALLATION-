@@ -1,7 +1,7 @@
 # ============================================================
 #  DSpace 7.6 - Harare Polytechnic Configuration Template
 #  Copy to: /dspace/config/local.cfg
-#  Update all values marked with <CHANGE THIS>
+#  Update all placeholder values before use
 # ============================================================
 
 #------------------------------------------------------------------
@@ -12,13 +12,13 @@ dspace.dir = /dspace
 #------------------------------------------------------------------
 # URLs - Update with your actual hostname/IP
 #------------------------------------------------------------------
-dspace.server.url = http://192.168.26.3:8080/server
-dspace.ui.url = http://192.168.26.3:4000
+dspace.server.url = http://repo.example.edu:8080/server
+dspace.ui.url = http://repo.example.edu:4000
 
 # Public-facing name shown in the interface
 dspace.name = Harare Polytechnic Institutional Repository
 
-dspace.hostname = 192.168.26.3
+dspace.hostname = repo.example.edu
 
 #------------------------------------------------------------------
 # Database
@@ -26,7 +26,7 @@ dspace.hostname = 192.168.26.3
 db.driver = org.postgresql.Driver
 db.url = jdbc:postgresql://localhost:5432/dspace
 db.username = dspace
-db.password = <CHANGE THIS - use strong password>
+db.password = change-this-database-password
 db.schema = public
 
 # Connection pool
@@ -54,12 +54,12 @@ mail.server.port = 25
 # mail.server.password = your-app-password
 # mail.extraproperties = mail.smtp.starttls.enable=true
 
-mail.from.address = dspace@hrepoly.ac.zw
-mail.feedback.recipient = library@hrepoly.ac.zw
-mail.admin = library@hrepoly.ac.zw
+mail.from.address = dspace@example.edu
+mail.feedback.recipient = admin@example.edu
+mail.admin = admin@example.edu
 
 # Alert admins of errors
-alert.recipient = library@hrepoly.ac.zw
+alert.recipient = alerts@example.edu
 
 #------------------------------------------------------------------
 # Handle Server (digital object identifiers)
@@ -75,7 +75,7 @@ handle.prefix = 123456789
 user.registration = true
 
 # Require email confirmation
-authentication-password.domain.valid = hrepoly.ac.zw, gmail.com
+authentication-password.domain.valid = example.edu, gmail.com
 
 #------------------------------------------------------------------
 # Language

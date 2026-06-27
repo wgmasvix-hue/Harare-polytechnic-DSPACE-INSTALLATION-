@@ -6,7 +6,7 @@
 #  USAGE (paste entire block into Termius):
 #
 #  DB_PASS="YourDbPass123!" \
-#  ADMIN_EMAIL="library@hrepoly.ac.zw" \
+#  ADMIN_EMAIL="admin@example.edu" \
 #  ADMIN_PASS="YourAdminPass123!" \
 #  bash <(curl -fsSL https://raw.githubusercontent.com/wgmasvix-hue/harare-polytechnic-dspace-installation-/claude/dspace-harare-polytechnic-install-0asotw/scripts/deploy-now.sh)
 #
@@ -16,9 +16,9 @@ set -euo pipefail
 
 # ---- Config (auto-detected or from environment) ----
 SERVER_IP=$(curl -sf https://api.ipify.org 2>/dev/null || hostname -I | awk '{print $1}')
-DB_PASS="${DB_PASS:-DSpace@HararePolytechnic2024!}"
-ADMIN_EMAIL="${ADMIN_EMAIL:-library@hrepoly.ac.zw}"
-ADMIN_PASS="${ADMIN_PASS:-Admin@HararePolytechnic2024!}"
+DB_PASS="${DB_PASS:-}"
+ADMIN_EMAIL="${ADMIN_EMAIL:-}"
+ADMIN_PASS="${ADMIN_PASS:-}"
 INSTALL_DIR="/opt/dspace-install"
 
 G='\033[0;32m'; B='\033[0;34m'; R='\033[0;31m'; N='\033[0m'
@@ -31,6 +31,10 @@ echo "╔═══════════════════════�
 echo "║  Harare Polytechnic — DSpace 7.6 Auto-Deploy        ║"
 echo "║  Server: $SERVER_IP                          ║"
 echo "╚══════════════════════════════════════════════════════╝"
+
+[ -n "$DB_PASS" ] || die "Set DB_PASS before running this script"
+[ -n "$ADMIN_EMAIL" ] || die "Set ADMIN_EMAIL before running this script"
+[ -n "$ADMIN_PASS" ] || die "Set ADMIN_PASS before running this script"
 
 # ---- 1. Install Docker ----
 log "Installing Docker..."
@@ -72,7 +76,8 @@ ENV
 # Update local.cfg with actual IP and password
 sed -i "s|144\.91\.125\.128|${SERVER_IP}|g;
         s|192\.168\.26\.3|${SERVER_IP}|g;
-        s|DSpaceHrep2024!|${DB_PASS}|g" config/local.cfg
+        s|repo\.example\.edu|${SERVER_IP}|g;
+        s|change-this-database-password|${DB_PASS}|g" config/local.cfg
 ok ".env and local.cfg configured"
 
 # ---- 5. UFW firewall ----

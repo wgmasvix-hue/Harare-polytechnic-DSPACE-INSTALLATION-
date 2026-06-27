@@ -35,7 +35,7 @@ When submitting any item, fill in these fields:
 
 ## Step-by-Step: Submit via Web Browser
 
-1. Open `http://192.168.26.3/` in your browser
+1. Open `http://YOUR_SERVER_HOST/` in your browser
 2. Click **Login** → enter your email and password
 3. Click **Submit** in the top menu
 4. Select the correct **Collection**:
@@ -78,7 +78,7 @@ To import many items at once using the CSV template:
 # 3. Run the import:
 /dspace/bin/dspace import \
     --add \
-    --eperson library@hrepoly.ac.zw \
+    --eperson admin@example.edu \
     --collection <collection-handle> \
     --source /path/to/import-package/ \
     --mapfile /tmp/import-map.txt

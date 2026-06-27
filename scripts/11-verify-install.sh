@@ -9,7 +9,7 @@ fail()  { echo -e "${RED}[FAIL]${NC} $1"; ((FAIL++)); }
 warn()  { echo -e "${YELLOW}[WARN]${NC} $1"; ((WARN++)); }
 info()  { echo -e "       $1"; }
 
-HOST="${1:-192.168.26.3}"
+HOST="${1:-${DSPACE_HOSTNAME:-localhost}}"
 
 echo "======================================================"
 echo "  DSpace 7.6 — Installation Verification"
@@ -72,8 +72,12 @@ fi
 echo ""
 echo "--- Database ---"
 if command -v psql &>/dev/null; then
-    PGPASSWORD="${DSPACE_DB_PASSWORD:-DSpaceHrep2024!}" psql -h localhost -U dspace -d dspace \
-        -c "SELECT count(*) FROM eperson;" &>/dev/null && pass "Database connection OK" || fail "Cannot connect to database"
+    if [ -n "${DSPACE_DB_PASSWORD:-}" ]; then
+        PGPASSWORD="${DSPACE_DB_PASSWORD}" psql -h localhost -U dspace -d dspace \
+            -c "SELECT count(*) FROM eperson;" &>/dev/null && pass "Database connection OK" || fail "Cannot connect to database"
+    else
+        warn "Set DSPACE_DB_PASSWORD to verify database credentials directly"
+    fi
 elif docker exec dspace-db psql -U dspace -d dspace -c "SELECT 1;" &>/dev/null 2>&1; then
     pass "Database connection OK (Docker)"
 else

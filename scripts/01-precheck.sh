@@ -1,6 +1,6 @@
 #!/bin/bash
 # Pre-installation system check for DSpace 7.6
-# Run as root on the target server (hrepolyREP / 192.168.26.3)
+# Run as root on the target server
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'

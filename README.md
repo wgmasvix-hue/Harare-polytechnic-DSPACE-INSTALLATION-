@@ -1,14 +1,14 @@
 # Harare Polytechnic Institutional Repository
 ## DSpace 7.6 — Complete Installation Package
 
-**Server:** `hrepolyREP` | **IP:** `192.168.26.3` (Static LAN) | **OS:** Linux
+**Target Host:** your server hostname or public IP | **OS:** Linux
 
 ---
 
 ## Quick Start
 
 ```bash
-# On the server (via Cockpit terminal at https://192.168.26.3/)
+# On the server
 git clone https://github.com/wgmasvix-hue/harare-polytechnic-dspace-installation-.git /opt/dspace-install
 cd /opt/dspace-install
 cp .env.example .env && nano .env        # set passwords
@@ -17,17 +17,17 @@ make setup-collections                   # creates all HP faculties
 make verify                              # confirms everything works
 ```
 
-DSpace will be live at `http://192.168.26.3/`
+DSpace will be live at `http://YOUR_SERVER_HOST/`
 
 ---
 
 ## Problem: SSH Not Working
 
-Your server is visible on the network (`https://192.168.26.3/` responds) but SSH on port 22 is blocked.
+If your server responds over HTTP/HTTPS but SSH on port 22 is blocked, you can enable SSH from the web console.
 
 **Fix via Cockpit web terminal:**
 
-1. Open `https://192.168.26.3/` in your browser
+1. Open your server's web console in the browser
 2. Log in as `root`
 3. Click **Terminal** in the left sidebar
 4. Paste:
@@ -36,7 +36,7 @@ Your server is visible on the network (`https://192.168.26.3/` responds) but SSH
 apt-get install -y openssh-server && systemctl enable --now ssh && ufw allow 22
 ```
 
-5. Test from Windows: `ssh root@192.168.26.3`
+5. Test from another machine: `ssh root@YOUR_SERVER_HOST`
 
 ---
 
@@ -149,11 +149,11 @@ Users (LAN / Internet)
 Copy `.env.example` to `.env` and set these values before installing:
 
 ```bash
-SERVER_HOST=192.168.26.3       # server IP or hostname
+SERVER_HOST=repo.example.edu   # server IP or hostname
 DSPACE_DB_PASSWORD=...         # strong database password
 DSPACE_ADMIN_EMAIL=...         # admin login email
 DSPACE_ADMIN_PASS=...          # admin password
-SMTP_HOST=mail.hrepoly.ac.zw   # email server
+SMTP_HOST=mail.example.edu     # email server
 ```
 
 Main DSpace config: `config/local.cfg`
@@ -162,8 +162,8 @@ Main DSpace config: `config/local.cfg`
 
 ## Post-Installation Checklist
 
-- [ ] DSpace UI accessible at `http://192.168.26.3/`
-- [ ] Admin login works at `http://192.168.26.3/login`
+- [ ] DSpace UI accessible at `http://YOUR_SERVER_HOST/`
+- [ ] Admin login works at `http://YOUR_SERVER_HOST/login`
 - [ ] All 6 faculty communities visible
 - [ ] Test file upload — submit a sample document
 - [ ] SSL/HTTPS configured (`make ssl`)
@@ -209,7 +209,7 @@ docker exec dspace-db psql -U dspace -d dspace -c "SELECT version();"
 **Reset admin password:**
 ```bash
 docker exec dspace-backend /dspace/bin/dspace user \
-  --modify --email admin@hrepoly.ac.zw --newpassword NewPass123!
+  --modify --email admin@example.edu --newpassword NewPass123!
 ```
 
 **Full service restart:**
@@ -252,5 +252,5 @@ Automated backups: nightly at 03:00 via `/etc/cron.d/dspace`
 ## Support
 
 - **IT Department:** Harare Polytechnic IT Services
-- **Library:** library@hrepoly.ac.zw
+- **Library:** set your institution's repository support email
 - **DSpace Help:** https://groups.google.com/g/dspace-tech

@@ -1,10 +1,11 @@
 #!/bin/bash
-# Run this script through the Cockpit terminal at https://192.168.26.3/
+# Run this script through your server's Cockpit terminal.
 # It enables SSH so you can connect remotely from any machine.
 
 set -e
 
-echo "=== Enabling SSH on hrepolyREP ==="
+SERVER_IP=$(hostname -I 2>/dev/null | awk '{print $1}')
+echo "=== Enabling SSH access ==="
 
 # Detect OS
 if [ -f /etc/os-release ]; then
@@ -62,4 +63,4 @@ echo ""
 ss -tlnp | grep ':22' && echo "SSH is listening on port 22" || echo "WARNING: SSH not detected on port 22"
 
 echo ""
-echo "Done. You can now SSH in with: ssh root@192.168.26.3"
+echo "Done. You can now SSH in with: ssh root@${SERVER_IP:-your-server-host}"

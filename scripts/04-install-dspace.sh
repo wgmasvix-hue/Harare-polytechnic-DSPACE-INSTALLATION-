@@ -1,6 +1,6 @@
 #!/bin/bash
 # Step 4: Download, build, and install DSpace 7.6
-# Run as root on hrepolyREP (192.168.26.3)
+# Run as root on your target host
 
 set -euo pipefail
 
@@ -13,8 +13,13 @@ DSPACE_VERSION="7.6.3"
 DSPACE_SRC="/build/dspace-src"
 DSPACE_INSTALL="/dspace"
 DSPACE_CFG_DIR="$(dirname "$0")/../config"
-SERVER_HOSTNAME="${DSPACE_HOSTNAME:-192.168.26.3}"
-DB_PASS="${DSPACE_DB_PASSWORD:-DSpace@Hrep2024!}"
+DEFAULT_HOST="$(hostname -I 2>/dev/null | awk '{print $1}')"
+SERVER_HOSTNAME="${DSPACE_HOSTNAME:-${DEFAULT_HOST:-localhost}}"
+DB_PASS="${DSPACE_DB_PASSWORD:-}"
+SMTP_FROM_ADDRESS="${SMTP_FROM_ADDRESS:-dspace@example.edu}"
+ALERT_EMAIL="${DSPACE_ALERT_EMAIL:-admin@example.edu}"
+
+[ -n "$DB_PASS" ] || { warn "Set DSPACE_DB_PASSWORD before running this script"; exit 1; }
 
 # Ensure build directory exists
 mkdir -p /build
@@ -68,10 +73,10 @@ db.schema = public
 solr.server = http://localhost:8983/solr
 
 # Email (configure with your SMTP)
-mail.server = localhost
-mail.from.address = dspace@hrepoly.ac.zw
-mail.feedback.recipient = dspace-help@hrepoly.ac.zw
-mail.admin = dspace-admin@hrepoly.ac.zw
+mail.server = ${SMTP_HOST:-localhost}
+mail.from.address = ${SMTP_FROM_ADDRESS}
+mail.feedback.recipient = ${ALERT_EMAIL}
+mail.admin = ${ALERT_EMAIL}
 mail.server.username =
 mail.server.password =
 mail.server.port = 25

@@ -1,14 +1,14 @@
 # =================================================================
 #  Harare Polytechnic DSpace 7.6 — Makefile
 #  Usage:  make <target>
-#  Run on hrepolyREP (192.168.26.3) as root
+#  Run on your target host as root
 # =================================================================
 
 .PHONY: help install start stop restart status logs backup verify \
         fix-ssh check setup-collections ssl clean
 
 SHELL := /bin/bash
-HOST  ?= 192.168.26.3
+HOST  ?= localhost
 
 help:
 	@echo ""
@@ -80,7 +80,7 @@ logs:
 
 backup:
 	@echo "Running DSpace backup..."
-	@bash -c 'PGPASSWORD=$${DSPACE_DB_PASSWORD:-DSpaceHrep2024!} \
+	@bash -c 'PGPASSWORD=$${DSPACE_DB_PASSWORD:-change-this-database-password} \
 	  pg_dump -h localhost -U dspace dspace | gzip > /var/backups/dspace/dspace-$$(date +%Y%m%d_%H%M%S).sql.gz && \
 	  echo "Backup saved to /var/backups/dspace/"' 2>/dev/null || \
 	 docker exec dspace-db bash -c \

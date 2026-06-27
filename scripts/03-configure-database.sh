@@ -1,6 +1,6 @@
 #!/bin/bash
 # Step 3: Configure PostgreSQL for DSpace
-# Run as root on hrepolyREP
+# Run as root on your target host
 
 set -euo pipefail
 
@@ -10,8 +10,12 @@ ok()  { echo -e "${GREEN}[OK]${NC} $1"; }
 
 DB_NAME="dspace"
 DB_USER="dspace"
-# Change this password before running!
-DB_PASS="${DSPACE_DB_PASSWORD:-DSpace@Hrep2024!}"
+DB_PASS="${DSPACE_DB_PASSWORD:-}"
+
+if [ -z "$DB_PASS" ]; then
+    read -rsp "Database password for user '${DB_USER}': " DB_PASS
+    echo ""
+fi
 
 log "Configuring PostgreSQL for DSpace..."
 

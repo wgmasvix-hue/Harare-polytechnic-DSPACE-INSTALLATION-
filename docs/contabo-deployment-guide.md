@@ -74,12 +74,12 @@ make verify YOUR_CONTABO_IP
 
 ## Step 7 — Enable HTTPS (When You Get a Domain)
 
-If you point a domain like `repo.hrepoly.ac.zw` to your Contabo IP:
+If you point a domain like `repo.example.edu` to your Contabo IP:
 
 ```bash
 make ssl
 # Choose option 2 (Let's Encrypt)
-# Enter: repo.hrepoly.ac.zw
+# Enter: repo.example.edu
 ```
 
 Free SSL certificate, auto-renews every 90 days.

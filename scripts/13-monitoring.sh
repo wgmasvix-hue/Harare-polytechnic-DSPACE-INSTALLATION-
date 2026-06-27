@@ -1,6 +1,6 @@
 #!/bin/bash
 # =================================================================
-#  DSpace Health Monitoring — Harare Polytechnic
+#  DSpace Health Monitoring
 #  Checks all services every 5 minutes and sends email alerts
 #  Install: bash scripts/13-monitoring.sh
 # =================================================================
@@ -12,8 +12,8 @@ log() { echo -e "${BLUE}==>${NC} $1"; }
 ok()  { echo -e "${GREEN}[DONE]${NC} $1"; }
 
 MONITOR_SCRIPT="/usr/local/bin/dspace-monitor"
-ALERT_EMAIL="${DSPACE_ALERT_EMAIL:-library@hrepoly.ac.zw}"
-HOST="${DSPACE_HOSTNAME:-192.168.26.3}"
+ALERT_EMAIL="${DSPACE_ALERT_EMAIL:-alerts@example.edu}"
+HOST="${DSPACE_HOSTNAME:-localhost}"
 
 log "Installing DSpace monitoring..."
 

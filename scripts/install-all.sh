@@ -2,7 +2,7 @@
 # ============================================================
 #  HARARE POLYTECHNIC DSPACE 7.6 - MASTER INSTALLER
 #  Run this ONE script to install everything.
-#  Must be run as root on hrepolyREP (192.168.26.3)
+#  Must be run as root on your target host
 # ============================================================
 
 set -euo pipefail
@@ -28,7 +28,8 @@ echo "=========================================================="
 echo ""
 
 # Collect configuration
-export DSPACE_HOSTNAME="${DSPACE_HOSTNAME:-192.168.26.3}"
+DEFAULT_HOST="$(hostname -I 2>/dev/null | awk '{print $1}')"
+export DSPACE_HOSTNAME="${DSPACE_HOSTNAME:-${DEFAULT_HOST:-localhost}}"
 export DSPACE_DB_PASSWORD="${DSPACE_DB_PASSWORD:-}"
 export DSPACE_ADMIN_EMAIL="${DSPACE_ADMIN_EMAIL:-}"
 export DSPACE_ADMIN_FNAME="${DSPACE_ADMIN_FNAME:-}"

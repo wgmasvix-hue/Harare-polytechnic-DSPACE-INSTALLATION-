@@ -1,6 +1,6 @@
 #!/bin/bash
 # =================================================================
-#  SSL/HTTPS Setup for DSpace — Harare Polytechnic
+#  SSL/HTTPS Setup for DSpace
 #  Option A: Self-signed certificate (works on LAN immediately)
 #  Option B: Let's Encrypt (requires public domain name)
 # =================================================================
@@ -12,7 +12,10 @@ log()  { echo -e "${BLUE}==>${NC} $1"; }
 ok()   { echo -e "${GREEN}[DONE]${NC} $1"; }
 warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
 
-SERVER_HOST="${DSPACE_HOSTNAME:-192.168.26.3}"
+DEFAULT_HOST="$(hostname -I 2>/dev/null | awk '{print $1}')"
+SERVER_HOST="${DSPACE_HOSTNAME:-${DEFAULT_HOST:-localhost}}"
+SERVER_NAME="${DSPACE_SERVER_NAME:-repository-host}"
+ADMIN_EMAIL="${DSPACE_ADMIN_EMAIL:-admin@example.edu}"
 CERT_DIR="/etc/ssl/dspace"
 NGINX_CONF="/etc/nginx/sites-available/dspace"
 
@@ -36,12 +39,18 @@ case "$SSL_OPTION" in
 1)
     # ---- Self-Signed Certificate ----
     log "Generating self-signed certificate for ${SERVER_HOST}..."
+    if [[ "$SERVER_HOST" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+        SUBJECT_ALT_NAME="IP:${SERVER_HOST},DNS:${SERVER_NAME}"
+    else
+        SUBJECT_ALT_NAME="DNS:${SERVER_HOST},DNS:${SERVER_NAME}"
+    fi
+
     openssl req -x509 -nodes -days 3650 -newkey rsa:2048 \
         -keyout "${CERT_DIR}/dspace.key" \
         -out    "${CERT_DIR}/dspace.crt" \
-        -subj "/C=ZW/ST=Harare/L=Harare/O=Harare Polytechnic/OU=Library/CN=${SERVER_HOST}" \
+        -subj "/C=ZW/ST=Harare/L=Harare/O=Harare Polytechnic/OU=Repository/CN=${SERVER_HOST}" \
         -extensions v3_ca \
-        -addext "subjectAltName=IP:${SERVER_HOST},DNS:hrepolyREP,DNS:${SERVER_HOST}"
+        -addext "subjectAltName=${SUBJECT_ALT_NAME}"
 
     ok "Self-signed certificate generated (valid 10 years)"
     warn "Browsers will show a security warning — click 'Advanced > Proceed'"
@@ -51,7 +60,7 @@ case "$SSL_OPTION" in
 2)
     # ---- Let's Encrypt ----
     DOMAIN="${1:-}"
-    [ -z "$DOMAIN" ] && read -rp "Your public domain name (e.g. repo.hrepoly.ac.zw): " DOMAIN
+    [ -z "$DOMAIN" ] && read -rp "Your public domain name (e.g. repo.example.edu): " DOMAIN
 
     log "Installing Certbot..."
     apt-get install -y certbot python3-certbot-nginx 2>/dev/null || \
@@ -59,7 +68,7 @@ case "$SSL_OPTION" in
 
     log "Requesting certificate for ${DOMAIN}..."
     certbot --nginx -d "$DOMAIN" --non-interactive --agree-tos \
-        -m library@hrepoly.ac.zw --redirect
+        -m "${ADMIN_EMAIL}" --redirect
 
     # Auto-renewal
     systemctl enable certbot.timer 2>/dev/null || \
@@ -85,14 +94,14 @@ cat > "${NGINX_CONF}" <<NGINXSSL
 # Redirect HTTP → HTTPS
 server {
     listen 80;
-    server_name ${SERVER_HOST} hrepolyREP _;
+    server_name ${SERVER_HOST} ${SERVER_NAME} _;
     return 301 https://\$host\$request_uri;
 }
 
 server {
     listen 443 ssl;
     http2 on;
-    server_name ${SERVER_HOST} hrepolyREP _;
+    server_name ${SERVER_HOST} ${SERVER_NAME} _;
 
     # SSL certificates
     ssl_certificate     ${CERT_DIR}/dspace.crt;

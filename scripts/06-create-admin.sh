@@ -1,6 +1,6 @@
 #!/bin/bash
 # Step 6: Create DSpace administrator account
-# Run as root on hrepolyREP
+# Run as root on your target host
 
 set -euo pipefail
 

@@ -15,8 +15,8 @@ warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
 # Load config from .env if available
 [ -f "$(dirname $0)/../.env" ] && source "$(dirname $0)/../.env"
 
-BASE_URL="${DSPACE_SERVER_URL:-http://192.168.26.3/server}"
-ADMIN_EMAIL="${DSPACE_ADMIN_EMAIL:-library@hrepoly.ac.zw}"
+BASE_URL="${DSPACE_SERVER_URL:-http://${DSPACE_HOSTNAME:-localhost}/server}"
+ADMIN_EMAIL="${DSPACE_ADMIN_EMAIL:-admin@example.edu}"
 ADMIN_PASS="${DSPACE_ADMIN_PASS:-}"
 
 if [ -z "$ADMIN_PASS" ]; then

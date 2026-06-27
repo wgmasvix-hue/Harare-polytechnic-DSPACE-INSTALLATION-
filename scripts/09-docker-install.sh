@@ -2,7 +2,7 @@
 # =================================================================
 #  OPTION B: Docker-based DSpace install (EASIER / FASTER)
 #  Runs DSpace 7.6 via Docker Compose — no manual compiling needed.
-#  Run as root on hrepolyREP (192.168.26.3)
+#  Run as root on your target host
 # =================================================================
 
 set -euo pipefail
@@ -13,6 +13,7 @@ ok()  { echo -e "${GREEN}[DONE]${NC} $1"; }
 die() { echo -e "${RED}[ERROR]${NC} $1"; exit 1; }
 
 INSTALL_DIR="/opt/dspace-install"
+DEFAULT_HOST="$(hostname -I 2>/dev/null | awk '{print $1}')"
 
 [ "$EUID" -eq 0 ] || die "Run as root"
 
@@ -55,8 +56,8 @@ if [ ! -f ".env" ]; then
     log "Created .env from example"
 
     # Prompt for passwords
-    read -rp   "Server IP [192.168.26.3]: " SERVER_HOST
-    SERVER_HOST=${SERVER_HOST:-192.168.26.3}
+    read -rp   "Server IP / hostname [${DEFAULT_HOST:-localhost}]: " SERVER_HOST
+    SERVER_HOST=${SERVER_HOST:-${DEFAULT_HOST:-localhost}}
     read -rsp  "Database password: " DB_PASS; echo
     read -rsp  "DSpace admin password: " ADMIN_PASS; echo
     read -rp   "Admin email: " ADMIN_EMAIL
@@ -67,8 +68,8 @@ if [ ! -f ".env" ]; then
     sed -i "s|DSPACE_ADMIN_EMAIL=.*|DSPACE_ADMIN_EMAIL=${ADMIN_EMAIL}|" .env
 
     # Update local.cfg with actual values
-    sed -i "s|192.168.26.3|${SERVER_HOST}|g" config/local.cfg
-    sed -i "s|DSpaceHrep2024!|${DB_PASS}|g" config/local.cfg
+    sed -i "s|repo\\.example\\.edu|${SERVER_HOST}|g" config/local.cfg
+    sed -i "s|change-this-database-password|${DB_PASS}|g" config/local.cfg
 fi
 
 # ---- Pull images and start ----

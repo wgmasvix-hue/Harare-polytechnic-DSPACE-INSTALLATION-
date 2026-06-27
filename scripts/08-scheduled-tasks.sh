@@ -8,6 +8,7 @@ log() { echo -e "${BLUE}[$(date +%H:%M:%S)]${NC} $1"; }
 ok()  { echo -e "${GREEN}[OK]${NC} $1"; }
 
 DSPACE_INSTALL="/dspace"
+ALERT_EMAIL="${DSPACE_ALERT_EMAIL:-admin@example.edu}"
 
 log "Configuring DSpace scheduled tasks..."
 
@@ -17,7 +18,7 @@ cat > /etc/cron.d/dspace <<CRONTAB
 # Harare Polytechnic Institutional Repository
 
 DSPACE=${DSPACE_INSTALL}
-MAILTO=dspace-admin@hrepoly.ac.zw
+MAILTO=${ALERT_EMAIL}
 
 # Update OAI-PMH index every hour at minute 0
 0 * * * * dspace \${DSPACE}/bin/dspace oai import > /dev/null 2>&1
@@ -26,7 +27,7 @@ MAILTO=dspace-admin@hrepoly.ac.zw
 */5 * * * * dspace \${DSPACE}/bin/dspace index-discovery -b > /dev/null 2>&1
 
 # Harvest external content daily at 8am
-0 8 * * * dspace \${DSPACE}/bin/dspace harvest -r -e dspace-admin@hrepoly.ac.zw > /dev/null 2>&1
+0 8 * * * dspace \${DSPACE}/bin/dspace harvest -r -e ${ALERT_EMAIL} > /dev/null 2>&1
 
 # Send daily item subscription emails at 8am
 0 8 * * * dspace \${DSPACE}/bin/dspace subscription-send -f D > /dev/null 2>&1
