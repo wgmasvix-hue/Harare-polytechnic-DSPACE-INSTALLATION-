@@ -24,22 +24,25 @@ echo "  Server: $SERVER_IP"
 echo "========================================"
 
 # ── 1. Docker ────────────────────────────────────────────────────
-echo "[1/5] Installing Docker..."
+echo "[1/6] Installing Docker..."
 if ! command -v docker &>/dev/null; then
     curl -fsSL https://get.docker.com | sh -s -- --quiet
     systemctl enable --now docker
 fi
+if ! docker compose version &>/dev/null 2>&1; then
+    apt-get install -y -qq docker-compose-plugin 2>/dev/null || true
+fi
 echo "      Docker OK"
 
 # ── 2. Free port 80 ──────────────────────────────────────────────
-echo "[2/5] Freeing port 80..."
+echo "[2/6] Freeing port 80..."
 systemctl stop nginx  2>/dev/null || true
 systemctl disable nginx 2>/dev/null || true
 fuser -k 80/tcp 2>/dev/null || true
 echo "      Port 80 free"
 
 # ── 3. Write config files ────────────────────────────────────────
-echo "[3/5] Writing configuration..."
+echo "[3/6] Writing configuration..."
 mkdir -p "$DIR/config"
 cd "$DIR"
 
@@ -183,22 +186,42 @@ NGINX
 echo "      Config files written"
 
 # ── 4. Start containers ──────────────────────────────────────────
-echo "[4/5] Starting DSpace containers..."
+echo "[4/6] Starting DSpace containers..."
 docker compose down --remove-orphans 2>/dev/null || true
-docker compose pull --quiet
+docker compose pull
 docker compose up -d
-echo "      Containers started — waiting for DSpace (4-6 min)..."
+
+echo "      Waiting for DSpace backend (4-6 min)..."
 printf "      "
+SECS=0
 until curl -sf --connect-timeout 5 http://localhost:8080/server/api &>/dev/null; do
     printf "."
     sleep 10
+    SECS=$((SECS+10))
+    [ $SECS -ge 600 ] && { echo ""; echo "ERROR: Backend not ready after 10 min."; echo "Check: docker logs dspace-backend"; exit 1; }
 done
-echo " ready!"
+echo " backend ready!"
+
+echo "      Waiting for Angular UI (1-2 more min)..."
+printf "      "
+SECS=0
+until curl -sf --connect-timeout 5 http://localhost:4000/ &>/dev/null; do
+    printf "."
+    sleep 10
+    SECS=$((SECS+10))
+    [ $SECS -ge 300 ] && { echo ""; echo "ERROR: Frontend not ready after 5 min."; echo "Check: docker logs dspace-frontend"; exit 1; }
+done
+echo " UI ready!"
 
 # ── 5. Create admin ──────────────────────────────────────────────
-echo "[5/5] Creating admin account..."
+echo "[5/6] Creating admin account..."
 docker exec dspace-backend /dspace/bin/dspace create-administrator \
     -e "$ADMIN_EMAIL" -f Library -l Admin -p "$ADMIN_PASS" -c en 2>&1 | grep -v "^$" || true
+
+# ── 6. Final check ───────────────────────────────────────────────
+echo "[6/6] Verifying site is accessible..."
+HTTP=$(curl -so /dev/null -w "%{http_code}" --connect-timeout 5 http://localhost/ 2>/dev/null || echo "000")
+[ "$HTTP" = "200" ] && echo "      Site OK (HTTP $HTTP)" || echo "      Site returned HTTP $HTTP — may need a moment to fully load"
 
 # ── Done ─────────────────────────────────────────────────────────
 echo ""
