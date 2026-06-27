@@ -1,0 +1,170 @@
+/* ================================================================
+   Harare Polytechnic — DSpace Branding
+   Primary: #006633 (HP Green)   Accent: #FFD100 (HP Gold)
+   ================================================================ */
+
+/* ---------- HP Logo (replaces DSpace logo in navbar) ---------- */
+ds-root ds-header .navbar-brand img,
+ds-root ds-header a.navbar-brand img {
+  content: url('/hp-logo.svg');
+  height: 44px;
+  width: auto;
+}
+
+/* Hide default DSpace text brand if logo fails */
+ds-root ds-header .navbar-brand span {
+  display: none;
+}
+
+/* ---------- Navigation Bar ---------- */
+ds-root ds-header .navbar,
+ds-root ds-header nav.navbar {
+  background-color: #006633 !important;
+  border-bottom: 3px solid #FFD100;
+}
+
+ds-root ds-header .navbar-brand,
+ds-root ds-header .navbar-brand:hover,
+ds-root ds-header .navbar-brand:focus {
+  color: #FFD100 !important;
+}
+
+ds-root ds-header .nav-link,
+ds-root ds-header .navbar-nav .nav-link {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+ds-root ds-header .nav-link:hover,
+ds-root ds-header .navbar-nav .nav-link:hover {
+  color: #FFD100 !important;
+}
+
+/* ---------- Primary Buttons ---------- */
+ds-root .btn-primary,
+ds-root button.btn-primary {
+  background-color: #006633 !important;
+  border-color: #006633 !important;
+  color: #fff !important;
+}
+
+ds-root .btn-primary:hover,
+ds-root .btn-primary:focus {
+  background-color: #004d26 !important;
+  border-color: #004d26 !important;
+}
+
+/* ---------- Links ---------- */
+ds-root a:not(.btn):not(.nav-link):not(.navbar-brand) {
+  color: #006633;
+}
+
+ds-root a:not(.btn):not(.nav-link):not(.navbar-brand):hover {
+  color: #004d26;
+  text-decoration: underline;
+}
+
+/* ---------- Search Bar ---------- */
+ds-root ds-search-form .btn,
+ds-root ds-search-form button[type="submit"] {
+  background-color: #006633 !important;
+  border-color: #006633 !important;
+  color: #fff !important;
+}
+
+ds-root ds-search-form input:focus,
+ds-root .form-control:focus {
+  border-color: #006633 !important;
+  box-shadow: 0 0 0 0.2rem rgba(0, 102, 51, 0.25) !important;
+}
+
+/* ---------- Sidebar / Facets ---------- */
+ds-root ds-search-sidebar .card-header,
+ds-root ds-search-filters .filter-section-header {
+  background-color: #006633 !important;
+  color: #fff !important;
+}
+
+ds-root ds-search-sidebar .active > a,
+ds-root ds-search-filters .active > a {
+  color: #006633 !important;
+  font-weight: 600;
+}
+
+/* ---------- Pagination ---------- */
+ds-root .page-item.active .page-link {
+  background-color: #006633 !important;
+  border-color: #006633 !important;
+}
+
+ds-root .page-link {
+  color: #006633 !important;
+}
+
+ds-root .page-link:hover {
+  color: #004d26 !important;
+}
+
+/* ---------- Badges / Tags ---------- */
+ds-root .badge-primary,
+ds-root .badge.bg-primary {
+  background-color: #006633 !important;
+}
+
+ds-root .badge-warning,
+ds-root .badge.bg-warning {
+  background-color: #FFD100 !important;
+  color: #333 !important;
+}
+
+/* ---------- Footer ---------- */
+ds-root ds-footer footer,
+ds-root footer {
+  background-color: #006633 !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+  border-top: 3px solid #FFD100;
+}
+
+ds-root ds-footer footer a,
+ds-root footer a {
+  color: #FFD100 !important;
+}
+
+ds-root ds-footer footer a:hover,
+ds-root footer a:hover {
+  color: #fff !important;
+}
+
+/* ---------- Page Titles / Headings ---------- */
+ds-root h1.item-page-title,
+ds-root .item-page-title-field h2 {
+  color: #006633;
+  border-bottom: 2px solid #FFD100;
+  padding-bottom: 0.4rem;
+}
+
+/* ---------- Hero / Home Banner ---------- */
+ds-root ds-home-page .jumbotron,
+ds-root .home-header-wrapper {
+  background: linear-gradient(135deg, #006633 0%, #004d26 100%) !important;
+  color: #fff !important;
+}
+
+ds-root ds-home-page .jumbotron h1,
+ds-root .home-header-wrapper h1 {
+  color: #FFD100 !important;
+}
+
+/* ---------- Card Highlights ---------- */
+ds-root .card:hover {
+  border-color: #006633 !important;
+  box-shadow: 0 2px 8px rgba(0, 102, 51, 0.2);
+}
+
+/* ---------- Breadcrumbs ---------- */
+ds-root .breadcrumb-item.active {
+  color: #006633;
+}
+
+ds-root .breadcrumb-item a {
+  color: #006633 !important;
+}
