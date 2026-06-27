@@ -1,9 +1,7 @@
-version: '3.8'
-
 # =================================================================
 #  Harare Polytechnic DSpace 7.6 — Docker Compose
 #  Run: docker compose up -d
-#  UI:  http://192.168.26.3/
+#  UI:  http://144.91.125.128/
 # =================================================================
 
 networks:
@@ -14,7 +12,6 @@ volumes:
   pgdata:
   solrdata:
   assetstore:
-  dspace-config:
 
 services:
 
@@ -28,43 +25,32 @@ services:
     environment:
       POSTGRES_DB: dspace
       POSTGRES_USER: dspace
-      POSTGRES_PASSWORD: ${DSPACE_DB_PASSWORD:-DSpaceHrep2024!}
+      POSTGRES_PASSWORD: DSpaceHarare2024
     volumes:
       - pgdata:/var/lib/postgresql/data
-      - ./config/postgres-init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U dspace -d dspace"]
       interval: 10s
       timeout: 5s
       retries: 10
 
-  # ---- Apache Solr ----
+  # ---- Apache Solr (DSpace image with pre-built cores) ----
   solr:
-    image: solr:9.6
+    image: dspace/dspace-solr:dspace-7.6
     container_name: dspace-solr
     restart: unless-stopped
     networks:
       - dspace
     volumes:
-      - solrdata:/var/solr
-      - ./config/solr-cores:/opt/solr/server/solr/configsets/dspace:ro
-    command: >
-      bash -c "
-        precreate-core search  /opt/solr/server/solr/configsets/dspace 2>/dev/null || true;
-        precreate-core statistics /opt/solr/server/solr/configsets/dspace 2>/dev/null || true;
-        precreate-core authority /opt/solr/server/solr/configsets/dspace 2>/dev/null || true;
-        precreate-core oai /opt/solr/server/solr/configsets/dspace 2>/dev/null || true;
-        solr-foreground
-      "
+      - solrdata:/var/solr/data
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8983/solr/"]
+      test: ["CMD", "curl", "-f", "http://localhost:8983/solr/search/admin/ping"]
       interval: 15s
       timeout: 10s
-      retries: 10
-    ports:
-      - "127.0.0.1:8983:8983"    # Solr only accessible locally
+      retries: 15
+      start_period: 30s
 
-  # ---- DSpace Backend (REST API) ----
+  # ---- DSpace Backend (REST API / Tomcat) ----
   dspace:
     image: dspace/dspace:dspace-7.6
     container_name: dspace-backend
@@ -77,35 +63,28 @@ services:
       solr:
         condition: service_healthy
     environment:
-      # Database
       db__P__url: "jdbc:postgresql://postgres:5432/dspace"
       db__P__username: dspace
-      db__P__password: ${DSPACE_DB_PASSWORD:-DSpaceHrep2024!}
-      # Solr
+      db__P__password: DSpaceHarare2024
       solr__P__server: "http://solr:8983/solr"
-      # Public URLs
-      dspace__P__server__url: "http://${SERVER_HOST:-192.168.26.3}/server"
-      dspace__P__ui__url: "http://${SERVER_HOST:-192.168.26.3}"
+      dspace__P__server__url: "http://144.91.125.128/server"
+      dspace__P__ui__url: "http://144.91.125.128"
       dspace__P__name: "Harare Polytechnic Institutional Repository"
-      dspace__P__hostname: "${SERVER_HOST:-192.168.26.3}"
-      # Email
-      mail__P__server: "${SMTP_HOST:-localhost}"
+      dspace__P__hostname: "144.91.125.128"
+      mail__P__server: "localhost"
       mail__P__from__address: "dspace@hrepoly.ac.zw"
       mail__P__admin: "library@hrepoly.ac.zw"
-      # Handle
-      handle__P__prefix: "${HANDLE_PREFIX:-123456789}"
+      handle__P__prefix: "123456789"
     volumes:
       - assetstore:/dspace/assetstore
-      - dspace-config:/dspace/config
-      - ./config/local.cfg:/dspace/config/local.cfg:ro
     ports:
-      - "127.0.0.1:8080:8080"    # Tomcat only on localhost (Nginx proxies)
+      - "127.0.0.1:8080:8080"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/server/api"]
       interval: 30s
       timeout: 15s
-      retries: 15
-      start_period: 120s
+      retries: 20
+      start_period: 180s
 
   # ---- DSpace Angular UI (Frontend) ----
   dspace-ui:
@@ -115,15 +94,14 @@ services:
     networks:
       - dspace
     depends_on:
-      dspace:
-        condition: service_healthy
+      - dspace
     environment:
       DSPACE_UI_SSL: "false"
-      DSPACE_UI_HOST: "${SERVER_HOST:-192.168.26.3}"
+      DSPACE_UI_HOST: "144.91.125.128"
       DSPACE_UI_PORT: "4000"
       DSPACE_UI_NAMESPACE: "/"
       DSPACE_REST_SSL: "false"
-      DSPACE_REST_HOST: "${SERVER_HOST:-192.168.26.3}"
+      DSPACE_REST_HOST: "144.91.125.128"
       DSPACE_REST_PORT: "80"
       DSPACE_REST_NAMESPACE: "/server"
     ports:
@@ -143,9 +121,3 @@ services:
       - ./config/nginx.conf:/etc/nginx/conf.d/default.conf:ro
     ports:
       - "80:80"
-      - "443:443"
-    healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost/"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
