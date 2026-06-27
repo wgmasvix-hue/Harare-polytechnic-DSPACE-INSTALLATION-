@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 """
-ChengetAI Deploy — Telegram Bot
-Natural-language DSpace deployment using Ollama (local AI).
-
-Usage:
-    python3 commander.py
+ChengetAI Deploy — Telegram Bot with Live Ollama Conversation
+=============================================================
+While DSpace installs, the user can chat with Ollama in natural language.
+Ollama reads the live installer logs and answers questions like:
+  "How's it going?"       → "Setting up Solr search cores, about 4 min left"
+  "What's happening now?" → "DSpace is initialising the database schema"
+  "Is there an error?"    → "No errors yet, looking healthy"
 
 Requires:
-    pip install python-telegram-bot requests
+    pip3 install python-telegram-bot requests
 """
 
 import asyncio
@@ -30,21 +32,23 @@ from telegram.ext import (
 )
 
 # ═══════════════════════════════════════════════════════════════════
-#  CONFIGURATION — edit these before running
+#  CONFIGURATION — edit these two lines before running
 # ═══════════════════════════════════════════════════════════════════
 BOT_TOKEN     = "YOUR_BOT_TOKEN_HERE"
-ADMIN_CHAT_ID = YOUR_ADMIN_CHAT_ID_HERE   # integer, get via @userinfobot
+ADMIN_CHAT_ID = YOUR_ADMIN_CHAT_ID_HERE   # integer from @userinfobot
 
 OLLAMA_URL    = "http://localhost:11434/api/generate"
-OLLAMA_MODEL  = "llama3.2:3b"            # or "llama3:8b" for better accuracy
-
+OLLAMA_MODEL  = "llama3.2:3b"
 INSTALLER     = str(Path(__file__).parent / "installer.sh")
 LOG_FILE      = str(Path(__file__).parent / "deployments.log")
+
+# How often to send an automatic progress update (seconds)
+AUTO_UPDATE_INTERVAL = 120
 # ═══════════════════════════════════════════════════════════════════
 
-# ── Logging ─────────────────────────────────────────────────────
+# ── Logging ──────────────────────────────────────────────────────
 logging.basicConfig(
-    format="%(asctime)s [%(levelname)s] %(name)s — %(message)s",
+    format="%(asctime)s [%(levelname)s] %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
     level=logging.INFO,
     handlers=[
@@ -56,65 +60,124 @@ log = logging.getLogger("ChengetAI")
 
 # ── Global state ─────────────────────────────────────────────────
 is_busy: bool = False
-deploy_queue: deque = deque()   # items: (chat_id: int, params: dict)
+deploy_queue: deque = deque()
+
+# Tracks the active deployment so chat messages can reference it
+active: dict | None = None
+# Structure:
+# {
+#   "chat_id": int,
+#   "domain":  str,
+#   "ssl":     str,
+#   "log":     list[str],   # rolling log buffer (last 150 lines)
+#   "started": float,       # time.monotonic()
+# }
 
 
 # ═══════════════════════════════════════════════════════════════════
-#  OLLAMA — Natural language → deployment parameters
+#  OLLAMA HELPERS  (both run in a thread — requests is synchronous)
 # ═══════════════════════════════════════════════════════════════════
-SYSTEM_PROMPT = (
-    "You are a deployment parser. Extract the domain, version, and ssl (true/false) "
-    "from the user's message. Return ONLY strict JSON with no markdown and no extra text. "
-    'Example: {"domain": "library.com", "version": "7.6", "ssl": true}. '
-    "If no domain is mentioned, use 'localhost'. "
-    "Default version is '7.6'. Default ssl is false."
-)
 
-
-def parse_with_ollama(user_message: str) -> dict | None:
-    """Send user message to Ollama and return extracted params dict."""
+def _ollama_call(prompt: str, system: str, timeout: int = 90) -> str | None:
+    """Blocking Ollama call — always run via asyncio.to_thread()."""
     payload = {
         "model":  OLLAMA_MODEL,
-        "prompt": f"User message: {user_message}",
-        "system": SYSTEM_PROMPT,
+        "prompt": prompt,
+        "system": system,
         "stream": False,
     }
     try:
-        log.info(f"Sending to Ollama: {user_message!r}")
-        resp = requests.post(OLLAMA_URL, json=payload, timeout=90)
+        resp = requests.post(OLLAMA_URL, json=payload, timeout=timeout)
         resp.raise_for_status()
         raw = resp.json().get("response", "").strip()
-        # Strip markdown code fences if model adds them
-        raw = raw.replace("```json", "").replace("```", "").strip()
-        log.info(f"Ollama raw response: {raw}")
-        params = json.loads(raw)
-        return params
+        return raw
     except requests.exceptions.ConnectionError:
-        log.error("Ollama not reachable — is it running? (systemctl status ollama)")
-        return None
-    except (json.JSONDecodeError, KeyError, ValueError) as exc:
-        log.error(f"Failed to parse Ollama response: {exc} | raw={raw!r}")
+        log.error("Ollama not reachable (is it running?)")
         return None
     except Exception as exc:
-        log.error(f"Unexpected Ollama error: {exc}")
+        log.error(f"Ollama error: {exc}")
         return None
+
+
+def _parse_deployment_params(user_message: str) -> dict | None:
+    """Extract domain / ssl from a natural language request."""
+    system = (
+        "You are a deployment parser. Extract the domain and ssl (true/false) "
+        "from the user's message. Return ONLY strict JSON, no markdown. "
+        'Example: {"domain": "library.com", "ssl": true}. '
+        "If no domain is mentioned use 'localhost'. Default ssl is false."
+    )
+    raw = _ollama_call(f"User: {user_message}", system)
+    if not raw:
+        return None
+    raw = raw.replace("```json", "").replace("```", "").strip()
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError:
+        log.error(f"JSON parse failed: {raw!r}")
+        return None
+
+
+def _chat_about_deployment(user_question: str, ctx: dict) -> str:
+    """
+    Conversational Ollama call while a deployment is running.
+    ctx = active deployment dict.
+    """
+    elapsed_min = int((time.monotonic() - ctx["started"]) / 60)
+    recent_logs = "\n".join(ctx["log"][-60:]) or "(no output yet)"
+
+    system = (
+        f"You are ChengetAI, a friendly AI deployment assistant. "
+        f"You are currently deploying DSpace for '{ctx['domain']}' (SSL={ctx['ssl']}). "
+        f"The installation has been running for {elapsed_min} minute(s).\n\n"
+        f"Recent installer output:\n{recent_logs}\n\n"
+        f"Answer the user's question conversationally. Be concise and friendly. "
+        f"Use the logs to give accurate progress. "
+        f"Typical DSpace install stages and durations:\n"
+        f"  1. Docker setup:     ~1 min\n"
+        f"  2. Pulling images:   ~5-8 min\n"
+        f"  3. Database init:    ~1 min\n"
+        f"  4. DSpace startup:   ~4-6 min\n"
+        f"  5. Angular UI start: ~2 min\n"
+        f"If you see errors in the logs, mention them clearly."
+    )
+    result = _ollama_call(user_question, system, timeout=60)
+    return result or "I'm having trouble reaching the AI right now. The deployment is still running!"
+
+
+def _generate_status_update(ctx: dict) -> str:
+    """Auto-generate a friendly progress update from the current logs."""
+    elapsed_min = int((time.monotonic() - ctx["started"]) / 60)
+    recent_logs = "\n".join(ctx["log"][-40:]) or "(starting up...)"
+
+    system = (
+        f"You are ChengetAI. Summarise the current deployment progress for "
+        f"'{ctx['domain']}' in 2-3 sentences. Be friendly and specific. "
+        f"Elapsed time: {elapsed_min} min. Recent logs:\n{recent_logs}"
+    )
+    result = _ollama_call("Give a brief status update.", system, timeout=45)
+    return result or f"Deployment running for {elapsed_min} min — still in progress..."
 
 
 # ═══════════════════════════════════════════════════════════════════
 #  DEPLOYMENT RUNNER
 # ═══════════════════════════════════════════════════════════════════
-async def run_deployment(chat_id: int, params: dict, app: Application) -> None:
-    """
-    Run installer.sh with the given params.
-    Streams stdout line-by-line back to the Telegram user.
-    When finished, processes the next item in the queue.
-    """
-    global is_busy
 
-    domain      = params.get("domain", "localhost")
-    ssl         = "true" if params.get("ssl") else "false"
+async def run_deployment(chat_id: int, params: dict, app: Application) -> None:
+    global is_busy, active
+
+    domain = params.get("domain", "localhost")
+    ssl    = "true" if params.get("ssl") else "false"
     admin_email = params.get("admin_email", f"admin@{domain}")
-    admin_pass  = params.get("admin_pass", "ChengetAI2026!")
+    admin_pass  = "ChengetAI2026!"
+
+    active = {
+        "chat_id": chat_id,
+        "domain":  domain,
+        "ssl":     ssl,
+        "log":     [],
+        "started": time.monotonic(),
+    }
 
     env = {
         **os.environ,
@@ -125,17 +188,24 @@ async def run_deployment(chat_id: int, params: dict, app: Application) -> None:
         "DEBIAN_FRONTEND": "noninteractive",
     }
 
-    log.info(f"[{chat_id}] Starting deployment: domain={domain} ssl={ssl}")
-    start_time = time.monotonic()
+    log.info(f"[{chat_id}] Starting: domain={domain} ssl={ssl}")
 
     await _safe_send(
         app, chat_id,
-        f"🚀 *Starting deployment*\n\n"
+        f"🚀 *Deployment started!*\n\n"
         f"📌 Domain: `{domain}`\n"
-        f"🔒 SSL: `{ssl}`\n"
-        f"📧 Admin: `{admin_email}`\n\n"
-        f"_Streaming installer output below..._",
+        f"🔒 SSL:    `{ssl}`\n\n"
+        f"⏱ This takes *5-10 minutes*. Feel free to chat with me while you wait!\n\n"
+        f"💬 Try asking:\n"
+        f"• _\"How's it going?\"_\n"
+        f"• _\"What's happening now?\"_\n"
+        f"• _\"How long is left?\"_",
         parse_mode="Markdown",
+    )
+
+    # Start auto-update task
+    updater_task = asyncio.create_task(
+        _auto_updater(chat_id, app)
     )
 
     try:
@@ -146,47 +216,33 @@ async def run_deployment(chat_id: int, params: dict, app: Application) -> None:
             stderr=asyncio.subprocess.STDOUT,
         )
 
-        buffer: list[str] = []
-        last_flush = asyncio.get_running_loop().time()
-
-        async def flush() -> None:
-            """Send buffered lines to Telegram, respecting message length limit."""
-            nonlocal last_flush
-            if not buffer:
-                return
-            chunk = "\n".join(buffer[-30:])   # last 30 lines max
-            if len(chunk) > 3800:
-                chunk = "..." + chunk[-3800:]  # Telegram 4096 char limit
-            await _safe_send(app, chat_id, f"```\n{chunk}\n```", parse_mode="Markdown")
-            buffer.clear()
-            last_flush = asyncio.get_running_loop().time()
-
-        # Read subprocess output line by line
+        # Read stdout — feed into active["log"] for Ollama context
         while True:
             line_bytes = await process.stdout.readline()
             if not line_bytes:
                 break
             line = line_bytes.decode("utf-8", errors="replace").rstrip()
-            log.info(f"[{chat_id}|{domain}] {line}")
-            buffer.append(line)
+            log.info(f"[{domain}] {line}")
+            if active:
+                active["log"].append(line)
+                if len(active["log"]) > 150:   # keep rolling window
+                    active["log"].pop(0)
 
-            now = asyncio.get_running_loop().time()
-            if len(buffer) >= 25 or (now - last_flush) >= 15:
-                await flush()
-
-        await flush()
         await process.wait()
-        elapsed = int(time.monotonic() - start_time)
+        updater_task.cancel()
+
+        elapsed = int(time.monotonic() - active["started"])
 
         if process.returncode == 0:
             proto = "https" if ssl == "true" else "http"
             await _safe_send(
                 app, chat_id,
                 f"✅ *Deployment complete!* ({elapsed}s)\n\n"
-                f"🌐 URL:   `{proto}://{domain}/`\n"
+                f"🌐 `{proto}://{domain}/`\n"
                 f"🔑 Login: `{proto}://{domain}/login`\n"
                 f"📧 Email: `{admin_email}`\n"
-                f"🔐 Pass:  `{admin_pass}`",
+                f"🔐 Pass:  `{admin_pass}`\n\n"
+                f"_DSpace is live and ready to use._",
                 parse_mode="Markdown",
             )
             log.info(f"[{chat_id}] Deployment of {domain} succeeded in {elapsed}s")
@@ -194,56 +250,73 @@ async def run_deployment(chat_id: int, params: dict, app: Application) -> None:
             await _safe_send(
                 app, chat_id,
                 f"❌ *Deployment failed* (exit {process.returncode}, {elapsed}s)\n\n"
-                f"Check server logs:\n`docker logs dspace-backend`",
+                f"Ask me what went wrong and I'll check the logs for you.",
                 parse_mode="Markdown",
             )
-            log.error(f"[{chat_id}] Deployment of {domain} failed (exit {process.returncode})")
 
     except Exception as exc:
-        log.exception(f"[{chat_id}] Deployment exception: {exc}")
+        updater_task.cancel()
+        log.exception(f"[{chat_id}] Exception: {exc}")
         await _safe_send(
             app, chat_id,
-            f"❌ *Unexpected error during deployment:*\n`{exc}`",
+            f"❌ *Unexpected error:*\n`{exc}`",
             parse_mode="Markdown",
         )
     finally:
         is_busy = False
-        log.info(f"Queue size after finish: {len(deploy_queue)}")
+        active  = None
 
-        # Start next deployment in queue automatically
         if deploy_queue:
             next_chat_id, next_params = deploy_queue.popleft()
             is_busy = True
-            log.info(f"Dequeuing deployment for chat {next_chat_id}")
             await _safe_send(
                 app, next_chat_id,
-                "⏳ The previous deployment finished. *Starting yours now...*",
+                "⏳ Previous deployment finished. *Starting yours now...*",
                 parse_mode="Markdown",
             )
             asyncio.create_task(run_deployment(next_chat_id, next_params, app))
 
 
+async def _auto_updater(chat_id: int, app: Application) -> None:
+    """Every AUTO_UPDATE_INTERVAL seconds, ask Ollama to summarise progress."""
+    await asyncio.sleep(AUTO_UPDATE_INTERVAL)
+    while is_busy and active:
+        try:
+            update_text = await asyncio.to_thread(_generate_status_update, active)
+            await _safe_send(
+                app, chat_id,
+                f"📊 *Auto-update:*\n{update_text}",
+                parse_mode="Markdown",
+            )
+        except Exception as exc:
+            log.warning(f"Auto-updater error: {exc}")
+        await asyncio.sleep(AUTO_UPDATE_INTERVAL)
+
+
 async def _safe_send(app: Application, chat_id: int, text: str, **kwargs) -> None:
-    """Send a Telegram message, silently ignoring send errors."""
     try:
         await app.bot.send_message(chat_id, text, **kwargs)
-        await asyncio.sleep(0.5)   # basic rate-limit guard
+        await asyncio.sleep(0.4)
     except Exception as exc:
-        log.warning(f"Failed to send message to {chat_id}: {exc}")
+        log.warning(f"Send failed to {chat_id}: {exc}")
 
 
 # ═══════════════════════════════════════════════════════════════════
 #  COMMAND HANDLERS
 # ═══════════════════════════════════════════════════════════════════
+
 async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(
         "👋 *Welcome to ChengetAI Deploy!*\n\n"
-        "I deploy DSpace institutional repositories using plain English.\n\n"
-        "*Examples — just type:*\n"
+        "I deploy DSpace and chat with you while it installs.\n\n"
+        "*Just tell me what you need:*\n"
         "• `Deploy DSpace for library.harare.ac.zw with SSL`\n"
         "• `Install on docs.hrepoly.ac.zw`\n"
-        "• `Set up repository for research.uni.ac.zw with HTTPS`\n\n"
-        "*Commands:*\n"
+        "• `Set up repository for research.uni.ac.zw`\n\n"
+        "*While deploying, you can ask me anything:*\n"
+        "• _\"How long is left?\"_\n"
+        "• _\"What's happening now?\"_\n"
+        "• _\"Is there an error?\"_\n\n"
         "/status — am I busy?\n"
         "/shutdown — stop the bot _(admin only)_",
         parse_mode="Markdown",
@@ -251,10 +324,11 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 async def cmd_status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    if is_busy:
+    if is_busy and active:
+        elapsed = int((time.monotonic() - active["started"]) / 60)
         q = len(deploy_queue)
         text = (
-            f"⚙️ *Busy* — deployment in progress.\n"
+            f"⚙️ *Deploying* `{active['domain']}` ({elapsed} min elapsed)\n"
             f"Queue: {q} waiting."
         )
     else:
@@ -266,35 +340,52 @@ async def cmd_shutdown(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     if update.effective_chat.id != ADMIN_CHAT_ID:
         await update.message.reply_text("❌ Admin-only command.")
         return
-    log.info("Shutdown requested by admin.")
-    await update.message.reply_text("🛑 Shutting down ChengetAI Deploy. Goodbye!")
+    await update.message.reply_text("🛑 Shutting down. Goodbye!")
+    log.info("Shutdown by admin.")
     os._exit(0)
 
 
+# ═══════════════════════════════════════════════════════════════════
+#  MESSAGE HANDLER — routes to deploy OR conversation
+# ═══════════════════════════════════════════════════════════════════
+
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Parse the user's natural language request and queue or start deployment."""
     global is_busy
 
     chat_id   = update.effective_chat.id
     user_text = update.message.text.strip()
-    log.info(f"[{chat_id}] Received: {user_text!r}")
+    log.info(f"[{chat_id}] Message: {user_text!r}")
 
-    # ── Parse with Ollama ────────────────────────────────────────
-    thinking_msg = await update.message.reply_text("🤔 Analysing your request with AI...")
-    params = parse_with_ollama(user_text)
+    # ── Mode 1: Deployment is running AND this user started it ───
+    # Route their message to Ollama for a conversational reply
+    if is_busy and active and active["chat_id"] == chat_id:
+        typing = await update.message.reply_text("🤔 Thinking...")
+        try:
+            reply = await asyncio.to_thread(_chat_about_deployment, user_text, active)
+        except Exception as exc:
+            reply = f"Sorry, couldn't reach the AI: {exc}"
+        try:
+            await typing.delete()
+        except Exception:
+            pass
+        await update.message.reply_text(f"🤖 {reply}")
+        return
 
-    # Delete the "thinking" message
+    # ── Mode 2: Deployment running but different user OR idle user
+    #    trying to queue/start a new deployment ───────────────────
+    thinking = await update.message.reply_text("🤔 Analysing your request...")
+    params = await asyncio.to_thread(_parse_deployment_params, user_text)
+
     try:
-        await thinking_msg.delete()
+        await thinking.delete()
     except Exception:
         pass
 
     if not params:
         await update.message.reply_text(
-            "❌ *I couldn't understand that.*\n\n"
-            "Is Ollama running? (`systemctl status ollama`)\n\n"
-            "Try phrasing like:\n"
-            "`Deploy DSpace for library.example.com with SSL`",
+            "❌ *Couldn't understand that.*\n\n"
+            "Is Ollama running?\n`systemctl status ollama`\n\n"
+            "Try: `Deploy DSpace for library.example.com with SSL`",
             parse_mode="Markdown",
         )
         return
@@ -303,22 +394,18 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     ssl    = params.get("ssl", False)
 
     await update.message.reply_text(
-        f"📋 *Parsed request:*\n"
-        f"Domain: `{domain}`\n"
-        f"SSL:    `{ssl}`\n\n"
-        f"{'Queuing...' if is_busy else 'Starting now...'}",
+        f"📋 *Parsed:*\nDomain: `{domain}`\nSSL: `{ssl}`",
         parse_mode="Markdown",
     )
 
-    # ── Queue or deploy ──────────────────────────────────────────
     if is_busy:
         position = len(deploy_queue) + 1
         deploy_queue.append((chat_id, params))
-        log.info(f"[{chat_id}] Queued at position {position}")
+        log.info(f"[{chat_id}] Queued at #{position}")
         await update.message.reply_text(
-            f"⏳ *I am currently busy with another deployment.*\n\n"
+            f"⏳ *I'm busy with another deployment.*\n\n"
             f"You are *#{position}* in the queue.\n"
-            f"I will start yours automatically when the current one finishes.",
+            f"I'll start yours automatically when finished.",
             parse_mode="Markdown",
         )
     else:
@@ -329,32 +416,27 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 # ═══════════════════════════════════════════════════════════════════
 #  MAIN
 # ═══════════════════════════════════════════════════════════════════
+
 def main() -> None:
     if BOT_TOKEN == "YOUR_BOT_TOKEN_HERE":
-        print("ERROR: Set BOT_TOKEN in commander.py before running.")
+        print("ERROR: Set BOT_TOKEN in commander.py")
         sys.exit(1)
-    if ADMIN_CHAT_ID == "YOUR_ADMIN_CHAT_ID_HERE":
-        print("ERROR: Set ADMIN_CHAT_ID in commander.py before running.")
+    if str(ADMIN_CHAT_ID) == "YOUR_ADMIN_CHAT_ID_HERE":
+        print("ERROR: Set ADMIN_CHAT_ID in commander.py")
         sys.exit(1)
 
-    log.info("=" * 50)
-    log.info("ChengetAI Deploy starting")
-    log.info(f"Installer: {INSTALLER}")
-    log.info(f"Ollama model: {OLLAMA_MODEL}")
-    log.info("=" * 50)
+    log.info("=" * 55)
+    log.info("ChengetAI Deploy — with live Ollama conversation")
+    log.info(f"Model: {OLLAMA_MODEL}  |  Installer: {INSTALLER}")
+    log.info("=" * 55)
 
-    app = (
-        Application.builder()
-        .token(BOT_TOKEN)
-        .build()
-    )
-
+    app = Application.builder().token(BOT_TOKEN).build()
     app.add_handler(CommandHandler("start",    cmd_start))
     app.add_handler(CommandHandler("status",   cmd_status))
     app.add_handler(CommandHandler("shutdown", cmd_shutdown))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
-    log.info("Bot polling started. Send /start to your bot to test.")
+    log.info("Polling started. DM the bot /start to begin.")
     app.run_polling(drop_pending_updates=True)
 
 
