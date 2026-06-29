@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-ChengetAI Deploy — Telegram Bot with Live Ollama Conversation
+ChengetAi Deploy — Telegram Bot with Live Ollama Conversation
 =============================================================
 While DSpace installs, the user can chat with Ollama in natural language.
 Ollama reads the live installer logs and answers questions like:
@@ -56,7 +56,7 @@ logging.basicConfig(
         logging.StreamHandler(sys.stdout),
     ],
 )
-log = logging.getLogger("ChengetAI")
+log = logging.getLogger("ChengetAi")
 
 # ── Global state ─────────────────────────────────────────────────
 is_busy: bool = False
@@ -127,7 +127,7 @@ def _chat_about_deployment(user_question: str, ctx: dict) -> str:
     recent_logs = "\n".join(ctx["log"][-60:]) or "(no output yet)"
 
     system = (
-        f"You are ChengetAI, a friendly AI deployment assistant. "
+        f"You are ChengetAi, a friendly AI deployment assistant. "
         f"You are currently deploying DSpace for '{ctx['domain']}' (SSL={ctx['ssl']}). "
         f"The installation has been running for {elapsed_min} minute(s).\n\n"
         f"Recent installer output:\n{recent_logs}\n\n"
@@ -151,7 +151,7 @@ def _generate_status_update(ctx: dict) -> str:
     recent_logs = "\n".join(ctx["log"][-40:]) or "(starting up...)"
 
     system = (
-        f"You are ChengetAI. Summarise the current deployment progress for "
+        f"You are ChengetAi. Summarise the current deployment progress for "
         f"'{ctx['domain']}' in 2-3 sentences. Be friendly and specific. "
         f"Elapsed time: {elapsed_min} min. Recent logs:\n{recent_logs}"
     )
@@ -169,7 +169,7 @@ async def run_deployment(chat_id: int, params: dict, app: Application) -> None:
     domain = params.get("domain", "localhost")
     ssl    = "true" if params.get("ssl") else "false"
     admin_email = params.get("admin_email", f"admin@{domain}")
-    admin_pass  = "ChengetAI2026!"
+    admin_pass  = "ChengetAi2026!"
 
     active = {
         "chat_id": chat_id,
@@ -307,7 +307,7 @@ async def _safe_send(app: Application, chat_id: int, text: str, **kwargs) -> Non
 
 async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(
-        "👋 *Welcome to ChengetAI Deploy!*\n\n"
+        "👋 *Welcome to ChengetAi Deploy!*\n\n"
         "I deploy DSpace and chat with you while it installs.\n\n"
         "*Just tell me what you need:*\n"
         "• `Deploy DSpace for library.harare.ac.zw with SSL`\n"
@@ -426,7 +426,7 @@ def main() -> None:
         sys.exit(1)
 
     log.info("=" * 55)
-    log.info("ChengetAI Deploy — with live Ollama conversation")
+    log.info("ChengetAi Deploy — with live Ollama conversation")
     log.info(f"Model: {OLLAMA_MODEL}  |  Installer: {INSTALLER}")
     log.info("=" * 55)
 

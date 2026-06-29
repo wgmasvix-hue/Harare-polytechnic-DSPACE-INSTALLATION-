@@ -1,4 +1,4 @@
-# ChengetAI Deploy — Setup Guide
+# ChengetAi Deploy — Setup Guide
 
 Deploy DSpace in plain English via Telegram. The bot uses a **local Ollama AI**
 running on your Contabo VPS — no OpenAI account, no API fees.
@@ -78,7 +78,7 @@ pip install python-telegram-bot requests
 
 1. Open Telegram and search for **@BotFather**
 2. Send `/newbot`
-3. Give it a name, e.g. `ChengetAI Deploy`
+3. Give it a name, e.g. `ChengetAi Deploy`
 4. Give it a username, e.g. `chengetai_deploy_bot`
 5. BotFather replies with a token like:
    ```
@@ -158,7 +158,7 @@ echo "Bot PID: $!"
 ```bash
 cat > /etc/systemd/system/chengetai.service << 'EOF'
 [Unit]
-Description=ChengetAI Deploy Bot
+Description=ChengetAi Deploy Bot
 After=network.target ollama.service
 
 [Service]

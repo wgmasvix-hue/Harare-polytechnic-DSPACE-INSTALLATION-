@@ -1,6 +1,6 @@
 #!/bin/bash
 # =================================================================
-#  ChengetAI Deploy — DSpace 7.6 Non-Interactive Installer
+#  ChengetAi Deploy — DSpace 7.6 Non-Interactive Installer
 #  Called by commander.py with environment variables set.
 #
 #  Environment variables:
@@ -19,7 +19,7 @@ export DEBIAN_FRONTEND=noninteractive
 # ── Variables ────────────────────────────────────────────────────
 DOMAIN="${DOMAIN:-localhost}"
 ADMIN_EMAIL="${ADMIN_EMAIL:-admin@${DOMAIN}}"
-ADMIN_PASS="${ADMIN_PASS:-ChengetAI2026!}"
+ADMIN_PASS="${ADMIN_PASS:-ChengetAi2026!}"
 SSL_ENABLED="${SSL_ENABLED:-false}"
 DB_PASS="${DB_PASS:-$(tr -dc 'A-Za-z0-9' </dev/urandom | head -c 20)}"
 DIR="/opt/dspace"
@@ -35,7 +35,7 @@ ok()  { echo "[$(date '+%H:%M:%S')] ✓ $*"; }
 err() { echo "[$(date '+%H:%M:%S')] ✗ $*" >&2; exit 1; }
 
 echo "=================================================="
-echo "  ChengetAI Deploy — DSpace 7.6"
+echo "  ChengetAi Deploy — DSpace 7.6"
 echo "  Domain:  $DOMAIN"
 echo "  SSL:     $SSL_ENABLED"
 echo "  URL:     $BASE_URL"
@@ -309,7 +309,7 @@ ok "UI ready"
 log "Creating admin account..."
 docker exec dspace-backend /dspace/bin/dspace create-administrator \
     -e "$ADMIN_EMAIL" \
-    -f "ChengetAI" \
+    -f "ChengetAi" \
     -l "Admin" \
     -p "$ADMIN_PASS" \
     -c "en" 2>&1 | grep -Ev "^$|log4j" || true
