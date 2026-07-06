@@ -1,0 +1,175 @@
+---
+# =============================================================================
+#  ChengetAi DSpace Engine — Docker Compose
+#  DSpace 8.x — production architecture
+#  Run via:  chengetai deploy dspace
+#            — or —
+#            scripts/install.sh
+# =============================================================================
+
+networks:
+  dspace:
+    name: dspace
+    driver: bridge
+
+volumes:
+  dspace-pgdata:
+    name: dspace-pgdata
+  dspace-solrdata:
+    name: dspace-solrdata
+  dspace-assetstore:
+    name: dspace-assetstore
+  dspace-config:
+    name: dspace-config
+  dspace-logs:
+    name: dspace-logs
+
+services:
+
+  # ---------------------------------------------------------------------------
+  # PostgreSQL 15
+  # ---------------------------------------------------------------------------
+  postgres:
+    image: postgres:15-alpine
+    container_name: dspace-db
+    restart: unless-stopped
+    networks:
+      - dspace
+    environment:
+      POSTGRES_DB: dspace
+      POSTGRES_USER: dspace
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - dspace-pgdata:/var/lib/postgresql/data
+      - ./docker/postgres-init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dspace -d dspace"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # ---------------------------------------------------------------------------
+  # Apache Solr (official DSpace image — ships pre-configured cores)
+  # ---------------------------------------------------------------------------
+  solr:
+    image: dspace/dspace-solr:${DSPACE_SOLR_TAG:-dspace-8_x}
+    container_name: dspace-solr
+    restart: unless-stopped
+    networks:
+      - dspace
+    volumes:
+      - dspace-solrdata:/var/solr
+    environment:
+      SOLR_JAVA_MEM: ${SOLR_MEMORY:--Xms256m -Xmx512m}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8983/solr/"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+    ports:
+      - "127.0.0.1:8983:8983"
+
+  # ---------------------------------------------------------------------------
+  # DSpace Backend (REST API / Tomcat)
+  # ---------------------------------------------------------------------------
+  dspace:
+    image: dspace/dspace:${DSPACE_BACKEND_TAG:-dspace-8_x}
+    container_name: dspace-backend
+    restart: unless-stopped
+    networks:
+      - dspace
+    depends_on:
+      postgres:
+        condition: service_healthy
+      solr:
+        condition: service_healthy
+    environment:
+      # Database
+      db__P__url: "jdbc:postgresql://postgres:5432/dspace"
+      db__P__username: dspace
+      db__P__password: "${POSTGRES_PASSWORD}"
+      # Solr
+      solr__P__server: "http://solr:8983/solr"
+      # Public URLs
+      dspace__P__server__url: "${PUBLIC_PROTOCOL:-http}://${DSPACE_HOSTNAME}/server"
+      dspace__P__ui__url: "${PUBLIC_PROTOCOL:-http}://${DSPACE_HOSTNAME}"
+      dspace__P__name: "${DSPACE_NAME:-DSpace Repository}"
+      dspace__P__hostname: "${DSPACE_HOSTNAME}"
+      # Email
+      mail__P__server: "${SMTP_HOST:-localhost}"
+      mail__P__server__port: "${SMTP_PORT:-25}"
+      mail__P__from__address: "${MAIL_FROM:-dspace@localhost}"
+      # Handle
+      handle__P__prefix: "${HANDLE_PREFIX:-123456789}"
+      # JVM memory
+      JAVA_OPTS: "${JAVA_MEMORY:--Xmx2g -Xms512m}"
+    volumes:
+      - dspace-assetstore:/dspace/assetstore
+      - dspace-config:/dspace/config
+      - dspace-logs:/dspace/log
+      - ./config/local.cfg:/dspace/config/local.cfg:ro
+    ports:
+      - "127.0.0.1:8080:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/server/api"]
+      interval: 30s
+      timeout: 15s
+      retries: 15
+      start_period: 180s
+
+  # ---------------------------------------------------------------------------
+  # DSpace Angular UI (Server-Side Rendered frontend)
+  # ---------------------------------------------------------------------------
+  dspace-ui:
+    image: dspace/dspace-angular:${DSPACE_FRONTEND_TAG:-dspace-8_x}
+    container_name: dspace-frontend
+    restart: unless-stopped
+    networks:
+      - dspace
+    depends_on:
+      dspace:
+        condition: service_healthy
+    environment:
+      DSPACE_UI_SSL: "${DSPACE_UI_SSL:-false}"
+      DSPACE_UI_HOST: "${DSPACE_HOSTNAME}"
+      DSPACE_UI_PORT: "4000"
+      DSPACE_UI_NAMESPACE: "/"
+      DSPACE_REST_SSL: "${DSPACE_REST_SSL:-false}"
+      DSPACE_REST_HOST: "${DSPACE_HOSTNAME}"
+      DSPACE_REST_PORT: "${DSPACE_REST_PORT:-80}"
+      DSPACE_REST_NAMESPACE: "/server"
+    ports:
+      - "127.0.0.1:4000:4000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4000/"]
+      interval: 30s
+      timeout: 15s
+      retries: 10
+      start_period: 60s
+
+  # ---------------------------------------------------------------------------
+  # Nginx Reverse Proxy
+  # ---------------------------------------------------------------------------
+  nginx:
+    image: nginx:alpine
+    container_name: dspace-nginx
+    restart: unless-stopped
+    networks:
+      - dspace
+    depends_on:
+      - dspace
+      - dspace-ui
+    volumes:
+      - ./config/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - /etc/ssl/chengetai:/etc/ssl/chengetai:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+    ports:
+      - "80:80"
+      - "443:443"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 5

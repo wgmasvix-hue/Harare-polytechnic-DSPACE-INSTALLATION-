@@ -1,0 +1,80 @@
+# =============================================================================
+#  ChengetAi Deploy — DSpace Engine Manifest
+#  Format: engine.yml v1
+# =============================================================================
+
+name: dspace
+version: "1.0.0"
+description: Production DSpace 8.x Institutional Repository
+author: ChengetAi Deploy
+license: MIT
+url: https://github.com/wgmasvix-hue/harare-polytechnic-dspace-installation-
+
+# Minimum requirements
+requires:
+  docker: ">=24.0"
+  compose: ">=2.20"
+  os: ubuntu-22.04 | ubuntu-24.04 | debian-12
+  ram_gb: 4
+  disk_gb: 20
+
+# Environment variable declarations (checked before install)
+env:
+  required:
+    - DSPACE_HOSTNAME
+    - POSTGRES_PASSWORD
+    - ADMIN_EMAIL
+    - ADMIN_PASSWORD
+  optional:
+    - DSPACE_NAME
+    - PUBLIC_PROTOCOL
+    - SMTP_HOST
+    - SMTP_PORT
+    - MAIL_FROM
+    - HANDLE_PREFIX
+    - JAVA_MEMORY
+    - SOLR_MEMORY
+    - BACKUP_ROOT
+    - BACKUP_RETENTION_DAYS
+
+# Commands exposed to the ChengetAi CLI
+commands:
+  deploy:
+    script: scripts/install.sh
+    description: Deploy a complete DSpace repository
+  backup:
+    script: scripts/backup.sh
+    description: Backup database, assetstore and configuration
+  restore:
+    script: scripts/restore.sh
+    description: Restore from a backup archive
+  update:
+    script: scripts/update.sh
+    description: Pull new DSpace images and restart services
+  uninstall:
+    script: scripts/uninstall.sh
+    description: Remove containers and optionally volumes
+  status:
+    script: scripts/healthcheck.sh
+    description: Check health of all DSpace services
+
+# Containers managed by this engine
+containers:
+  - dspace-db
+  - dspace-solr
+  - dspace-backend
+  - dspace-frontend
+  - dspace-nginx
+
+# Named volumes managed by this engine
+volumes:
+  - dspace-pgdata
+  - dspace-solrdata
+  - dspace-assetstore
+  - dspace-config
+  - dspace-logs
+
+# Port bindings
+ports:
+  - 80:80
+  - 443:443
