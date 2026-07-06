@@ -67,8 +67,8 @@ services:
       db__P__username: dspace
       db__P__password: ${DSPACE_DB_PASSWORD:-change-this-database-password}
       solr__P__server: "http://solr:8983/solr"
-      dspace__P__server__url: "http://${SERVER_HOST:-localhost}/server"
-      dspace__P__ui__url: "http://${SERVER_HOST:-localhost}"
+      dspace__P__server__url: "${PUBLIC_PROTOCOL:-http}://${SERVER_HOST:-localhost}/server"
+      dspace__P__ui__url: "${PUBLIC_PROTOCOL:-http}://${SERVER_HOST:-localhost}"
       dspace__P__name: "${DSPACE_SITE_NAME:-Harare Polytechnic Institutional Repository}"
       dspace__P__hostname: "${SERVER_HOST:-localhost}"
       mail__P__server: "${SMTP_HOST:-localhost}"
@@ -96,13 +96,13 @@ services:
     depends_on:
       - dspace
     environment:
-      DSPACE_UI_SSL: "false"
+      DSPACE_UI_SSL: "${DSPACE_UI_SSL:-false}"
       DSPACE_UI_HOST: "${SERVER_HOST:-localhost}"
       DSPACE_UI_PORT: "4000"
       DSPACE_UI_NAMESPACE: "/"
-      DSPACE_REST_SSL: "false"
+      DSPACE_REST_SSL: "${DSPACE_REST_SSL:-false}"
       DSPACE_REST_HOST: "${SERVER_HOST:-localhost}"
-      DSPACE_REST_PORT: "80"
+      DSPACE_REST_PORT: "${DSPACE_REST_PORT:-80}"
       DSPACE_REST_NAMESPACE: "/server"
     ports:
       - "127.0.0.1:4000:4000"
@@ -119,5 +119,8 @@ services:
       - dspace-ui
     volumes:
       - ./config/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - /etc/ssl/dspace:/etc/ssl/dspace:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
     ports:
       - "80:80"
+      - "443:443"

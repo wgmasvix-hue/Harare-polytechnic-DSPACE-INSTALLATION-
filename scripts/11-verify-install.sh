@@ -9,11 +9,19 @@ fail()  { echo -e "${RED}[FAIL]${NC} $1"; ((FAIL++)); }
 warn()  { echo -e "${YELLOW}[WARN]${NC} $1"; ((WARN++)); }
 info()  { echo -e "       $1"; }
 
-HOST="${1:-${DSPACE_HOSTNAME:-localhost}}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+if [ -f "${REPO_ROOT}/.env" ]; then
+    # shellcheck disable=SC1091
+    source "${REPO_ROOT}/.env"
+fi
+
+HOST="${1:-${SERVER_HOST:-${DSPACE_HOSTNAME:-localhost}}}"
+SCHEME="${PUBLIC_PROTOCOL:-http}"
 
 echo "======================================================"
 echo "  DSpace 7.6 — Installation Verification"
-echo "  Testing: http://${HOST}"
+echo "  Testing: ${SCHEME}://${HOST}"
 echo "  Date: $(date)"
 echo "======================================================"
 echo ""
@@ -38,30 +46,35 @@ echo ""
 echo "--- HTTP Endpoints ---"
 
 # Frontend
-HTTP_CODE=$(curl -so /dev/null -w "%{http_code}" --max-time 10 "http://${HOST}/" 2>/dev/null)
-[ "$HTTP_CODE" = "200" ] && pass "Frontend UI (http://${HOST}/): HTTP $HTTP_CODE" || fail "Frontend: HTTP $HTTP_CODE"
+HTTP_CODE=$(curl -kso /dev/null -w "%{http_code}" --max-time 10 "${SCHEME}://${HOST}/" 2>/dev/null)
+[ "$HTTP_CODE" = "200" ] && pass "Frontend UI (${SCHEME}://${HOST}/): HTTP $HTTP_CODE" || fail "Frontend: HTTP $HTTP_CODE"
 
 # REST API
-HTTP_CODE=$(curl -so /dev/null -w "%{http_code}" --max-time 10 "http://${HOST}/server/api" 2>/dev/null)
-[ "$HTTP_CODE" = "200" ] && pass "REST API (http://${HOST}/server/api): HTTP $HTTP_CODE" || fail "REST API: HTTP $HTTP_CODE"
+HTTP_CODE=$(curl -kso /dev/null -w "%{http_code}" --max-time 10 "${SCHEME}://${HOST}/server/api" 2>/dev/null)
+[ "$HTTP_CODE" = "200" ] && pass "REST API (${SCHEME}://${HOST}/server/api): HTTP $HTTP_CODE" || fail "REST API: HTTP $HTTP_CODE"
 
 # OAI-PMH
-HTTP_CODE=$(curl -so /dev/null -w "%{http_code}" --max-time 10 "http://${HOST}/server/oai/request?verb=Identify" 2>/dev/null)
+HTTP_CODE=$(curl -kso /dev/null -w "%{http_code}" --max-time 10 "${SCHEME}://${HOST}/server/oai/request?verb=Identify" 2>/dev/null)
 [ "$HTTP_CODE" = "200" ] && pass "OAI-PMH endpoint: HTTP $HTTP_CODE" || warn "OAI-PMH: HTTP $HTTP_CODE (may need indexing)"
 
 # Solr (internal)
-HTTP_CODE=$(curl -so /dev/null -w "%{http_code}" --max-time 5 "http://localhost:8983/solr/" 2>/dev/null)
-[ "$HTTP_CODE" = "200" ] && pass "Solr admin (localhost:8983): HTTP $HTTP_CODE" || warn "Solr: HTTP $HTTP_CODE"
+if command -v docker &>/dev/null && docker inspect --format='{{.State.Health.Status}}' dspace-solr &>/dev/null; then
+    SOLR_STATUS=$(docker inspect --format='{{.State.Health.Status}}' dspace-solr 2>/dev/null || echo "unknown")
+    [ "$SOLR_STATUS" = "healthy" ] && pass "Solr container health: $SOLR_STATUS" || warn "Solr container health: $SOLR_STATUS"
+else
+    HTTP_CODE=$(curl -so /dev/null -w "%{http_code}" --max-time 5 "http://localhost:8983/solr/" 2>/dev/null)
+    [ "$HTTP_CODE" = "200" ] && pass "Solr admin (localhost:8983): HTTP $HTTP_CODE" || warn "Solr: HTTP $HTTP_CODE"
+fi
 
 # ---- REST API Content ----
 echo ""
 echo "--- REST API ---"
-API_RESPONSE=$(curl -sf --max-time 10 "http://${HOST}/server/api" 2>/dev/null)
+API_RESPONSE=$(curl -ksf --max-time 10 "${SCHEME}://${HOST}/server/api" 2>/dev/null)
 if echo "$API_RESPONSE" | grep -q "dspaceVersion"; then
     DSPACE_VER=$(echo "$API_RESPONSE" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('dspaceVersion','unknown'))" 2>/dev/null || echo "7.x")
     pass "DSpace version: $DSPACE_VER"
-    COMM_COUNT=$(curl -sf "http://${HOST}/server/api/core/communities?size=1" 2>/dev/null | python3 -c "import sys,json; print(json.load(sys.stdin).get('page',{}).get('totalElements',0))" 2>/dev/null || echo "?")
-    COLL_COUNT=$(curl -sf "http://${HOST}/server/api/core/collections?size=1" 2>/dev/null | python3 -c "import sys,json; print(json.load(sys.stdin).get('page',{}).get('totalElements',0))" 2>/dev/null || echo "?")
+    COMM_COUNT=$(curl -ksf "${SCHEME}://${HOST}/server/api/core/communities?size=1" 2>/dev/null | python3 -c "import sys,json; print(json.load(sys.stdin).get('page',{}).get('totalElements',0))" 2>/dev/null || echo "?")
+    COLL_COUNT=$(curl -ksf "${SCHEME}://${HOST}/server/api/core/collections?size=1" 2>/dev/null | python3 -c "import sys,json; print(json.load(sys.stdin).get('page',{}).get('totalElements',0))" 2>/dev/null || echo "?")
     info "Communities: $COMM_COUNT | Collections: $COLL_COUNT"
     [ "$COMM_COUNT" -gt 0 ] 2>/dev/null && pass "Repository structure present ($COMM_COUNT communities)" || warn "No communities yet — run scripts/10-setup-collections.sh"
 else
@@ -99,5 +112,5 @@ echo "======================================================"
 
 echo ""
 echo "Access your repository:"
-echo "  http://${HOST}/"
-echo "  http://${HOST}/login  (admin)"
+echo "  ${SCHEME}://${HOST}/"
+echo "  ${SCHEME}://${HOST}/login  (admin)"

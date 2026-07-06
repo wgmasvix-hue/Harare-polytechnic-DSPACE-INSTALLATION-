@@ -67,7 +67,7 @@ Creates all faculties, departments, and collections automatically.
 ## Step 6 — Verify Everything Works
 
 ```bash
-make verify YOUR_CONTABO_IP
+make verify HOST=YOUR_CONTABO_IP
 ```
 
 ---

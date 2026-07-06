@@ -63,6 +63,10 @@ if [ ! -f ".env" ]; then
     read -rp   "Admin email: " ADMIN_EMAIL
 
     sed -i "s|SERVER_HOST=.*|SERVER_HOST=${SERVER_HOST}|" .env
+    sed -i "s|PUBLIC_PROTOCOL=.*|PUBLIC_PROTOCOL=http|" .env
+    sed -i "s|DSPACE_UI_SSL=.*|DSPACE_UI_SSL=false|" .env
+    sed -i "s|DSPACE_REST_SSL=.*|DSPACE_REST_SSL=false|" .env
+    sed -i "s|DSPACE_REST_PORT=.*|DSPACE_REST_PORT=80|" .env
     sed -i "s|DSPACE_DB_PASSWORD=.*|DSPACE_DB_PASSWORD=${DB_PASS}|" .env
     sed -i "s|DSPACE_ADMIN_PASS=.*|DSPACE_ADMIN_PASS=${ADMIN_PASS}|" .env
     sed -i "s|DSPACE_ADMIN_EMAIL=.*|DSPACE_ADMIN_EMAIL=${ADMIN_EMAIL}|" .env
