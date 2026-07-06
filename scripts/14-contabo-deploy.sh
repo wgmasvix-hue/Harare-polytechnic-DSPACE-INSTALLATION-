@@ -38,6 +38,8 @@ echo ""
 # Confirm or override IP
 read -rp "Contabo public IP [$PUBLIC_IP]: " INPUT_IP
 SERVER_IP="${INPUT_IP:-$PUBLIC_IP}"
+read -rp "Public hostname/domain [${SERVER_IP}]: " INPUT_HOST
+PUBLIC_HOST="${INPUT_HOST:-$SERVER_IP}"
 
 read -rsp "Database password (strong, min 16 chars): " DB_PASS; echo
 [ ${#DB_PASS} -lt 8 ] && die "Password too short"
@@ -47,6 +49,7 @@ read -rp  "Admin email address:   " ADMIN_EMAIL
 
 echo ""
 echo "  Server IP:    $SERVER_IP"
+echo "  Public host:  $PUBLIC_HOST"
 echo "  Admin email:  $ADMIN_EMAIL"
 echo ""
 read -rp "Proceed? [y/N]: " CONFIRM
@@ -134,7 +137,7 @@ cd "$INSTALL_DIR"
 
 # Write .env
 cat > .env <<ENV
-SERVER_HOST=${SERVER_IP}
+SERVER_HOST=${PUBLIC_HOST}
 PUBLIC_PROTOCOL=http
 DSPACE_UI_SSL=false
 DSPACE_REST_SSL=false
@@ -146,10 +149,14 @@ SMTP_HOST=localhost
 HANDLE_PREFIX=123456789
 ENV
 
-# Update local.cfg with actual IP
-sed -i "s|192\.168\.26\.3|${SERVER_IP}|g" config/local.cfg
-sed -i "s|repo\\.example\\.edu|${SERVER_IP}|g" config/local.cfg
-sed -i "s|change-this-database-password|${DB_PASS}|g"  config/local.cfg
+# Update local.cfg with actual public host
+sed -i \
+    -e "s|^dspace\\.hostname = .*|dspace.hostname = ${PUBLIC_HOST}|" \
+    -e "s|^dspace\\.server\\.url = .*|dspace.server.url = http://${PUBLIC_HOST}/server|" \
+    -e "s|^dspace\\.ui\\.url = .*|dspace.ui.url = http://${PUBLIC_HOST}|" \
+    -e "s|^oai\\.url = .*|oai.url = http://${PUBLIC_HOST}/server/oai/request|" \
+    -e "s|^db\\.password = .*|db.password = ${DB_PASS}|" \
+    config/local.cfg
 ok "Configuration written"
 
 # ================================================================
@@ -194,15 +201,23 @@ echo "╔═══════════════════════�
 echo "║   INSTALLATION COMPLETE                                     ║"
 echo "╠══════════════════════════════════════════════════════════════╣"
 echo "║                                                             ║"
-echo "║   DSpace UI:    http://${SERVER_IP}/                       "
-echo "║   Admin login:  http://${SERVER_IP}/login                  "
-echo "║   REST API:     http://${SERVER_IP}/server/                "
+echo "║   DSpace UI:    http://${PUBLIC_HOST}/                     "
+echo "║   Admin login:  http://${PUBLIC_HOST}/login                "
+echo "║   REST API:     http://${PUBLIC_HOST}/server/api           "
 echo "║                                                             ║"
 echo "║   Next steps:                                              ║"
 echo "║   1. Create faculty structure:                             ║"
-echo "║      cd /opt/dspace-install && make setup-collections       ║"
-echo "║   2. Enable HTTPS:  make ssl                               ║"
-echo "║   3. Monitor:       make status                            ║"
+echo "║      cd /opt/dspace-install && make setup-collections      ║"
+if [[ ! "$PUBLIC_HOST" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+echo "║   2. Point DNS A record to ${SERVER_IP}                    ║"
+echo "║   3. Enable HTTPS:  cd /opt/dspace-install && make ssl     ║"
+echo "║      Choose Let's Encrypt and enter ${PUBLIC_HOST}         ║"
+echo "║   4. Verify:       make verify HOST=${PUBLIC_HOST}         ║"
+else
+echo "║   2. When your domain is ready, update .env SERVER_HOST    ║"
+echo "║   3. Then run: make ssl  (Let's Encrypt)                   ║"
+echo "║   4. Monitor:      make status                             ║"
+fi
 echo "║                                                             ║"
 echo "║   Full log: $LOG"
 echo "╚══════════════════════════════════════════════════════════════╝"

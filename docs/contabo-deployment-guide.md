@@ -46,6 +46,7 @@ curl -fsSL https://raw.githubusercontent.com/wgmasvix-hue/harare-polytechnic-dsp
 
 You will be prompted for:
 - Your Contabo public IP (auto-detected)
+- Your public hostname/domain (for example `unifiedrepo.dare.co.zw`; leave the default IP if DNS is not ready yet)
 - Database password
 - Admin email and password
 
@@ -53,7 +54,24 @@ Installation takes **10–20 minutes** (mostly pulling Docker images).
 
 ---
 
-## Step 5 — Create HP Faculty Structure
+## Step 5 — Point DNS to the VPS
+
+Create an **A record** for your public hostname and point it to the Contabo VPS public IP.
+
+Example:
+
+```text
+Type:   A
+Name:   unifiedrepo.dare.co.zw
+Value:  YOUR_CONTABO_PUBLIC_IP
+TTL:    300
+```
+
+Wait for DNS to resolve publicly before requesting a Let's Encrypt certificate.
+
+---
+
+## Step 6 — Create HP Faculty Structure
 
 ```bash
 cd /opt/dspace-install
@@ -64,27 +82,45 @@ Creates all faculties, departments, and collections automatically.
 
 ---
 
-## Step 6 — Verify Everything Works
+## Step 7 — Enable HTTPS for the Public Domain
+
+If your repository should be public on `unifiedrepo.dare.co.zw`, update `/opt/dspace-install/.env` so it uses the hostname instead of the IP:
 
 ```bash
-make verify HOST=YOUR_CONTABO_IP
+cd /opt/dspace-install
+nano .env
 ```
+
+Set:
+
+```bash
+SERVER_HOST=unifiedrepo.dare.co.zw
+PUBLIC_PROTOCOL=https
+DSPACE_UI_SSL=true
+DSPACE_REST_SSL=true
+DSPACE_REST_PORT=443
+```
+
+Then request the certificate:
+
+```bash
+cd /opt/dspace-install
+make ssl
+# Choose option 2 (Let's Encrypt)
+# Enter: unifiedrepo.dare.co.zw
+docker compose up -d
+```
+
+The SSL script updates the stack for HTTPS and rewrites the public URLs to the selected hostname.
 
 ---
 
-## Step 7 — Enable HTTPS (When You Get a Domain)
-
-If you point a domain like `repo.example.edu` to your Contabo IP:
+## Step 8 — Verify Everything Works
 
 ```bash
-make ssl
-# Choose option 2 (Let's Encrypt)
-# Enter: repo.example.edu
+cd /opt/dspace-install
+make verify HOST=unifiedrepo.dare.co.zw
 ```
-
-Free SSL certificate, auto-renews every 90 days.
-
-Without a domain, run `make ssl` and choose option 1 (self-signed).
 
 ---
 
@@ -115,14 +151,13 @@ make reindex      # rebuild search index
 
 ---
 
-## Access URLs (replace with your IP)
+## Public Endpoints
 
 | URL | What it is |
 |---|---|
-| `http://YOUR_IP/` | DSpace homepage |
-| `http://YOUR_IP/login` | Admin login |
-| `http://YOUR_IP/server/` | REST API |
-| `http://YOUR_IP/server/api` | API browser |
+| `https://unifiedrepo.dare.co.zw/` | DSpace homepage |
+| `https://unifiedrepo.dare.co.zw/login` | Admin login |
+| `https://unifiedrepo.dare.co.zw/server/api` | REST API browser |
 
 ---
 

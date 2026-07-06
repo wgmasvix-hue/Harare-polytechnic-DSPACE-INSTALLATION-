@@ -8,6 +8,7 @@ pass()  { echo -e "${GREEN}[PASS]${NC} $1"; ((PASS++)); }
 fail()  { echo -e "${RED}[FAIL]${NC} $1"; ((FAIL++)); }
 warn()  { echo -e "${YELLOW}[WARN]${NC} $1"; ((WARN++)); }
 info()  { echo -e "       $1"; }
+endpoint_ok() { [[ "$1" == "200" || "$1" == "301" || "$1" == "302" ]]; }
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
@@ -43,11 +44,15 @@ fi
 
 # ---- HTTP Endpoints ----
 echo ""
-echo "--- HTTP Endpoints ---"
+echo "--- Public Endpoints ---"
 
 # Frontend
 HTTP_CODE=$(curl -kso /dev/null -w "%{http_code}" --max-time 10 "${SCHEME}://${HOST}/" 2>/dev/null)
-[ "$HTTP_CODE" = "200" ] && pass "Frontend UI (${SCHEME}://${HOST}/): HTTP $HTTP_CODE" || fail "Frontend: HTTP $HTTP_CODE"
+endpoint_ok "$HTTP_CODE" && pass "Frontend UI (${SCHEME}://${HOST}/): HTTP $HTTP_CODE" || fail "Frontend: HTTP $HTTP_CODE"
+
+# Login route
+HTTP_CODE=$(curl -kso /dev/null -w "%{http_code}" --max-time 10 "${SCHEME}://${HOST}/login" 2>/dev/null)
+endpoint_ok "$HTTP_CODE" && pass "Login route (${SCHEME}://${HOST}/login): HTTP $HTTP_CODE" || fail "Login route: HTTP $HTTP_CODE"
 
 # REST API
 HTTP_CODE=$(curl -kso /dev/null -w "%{http_code}" --max-time 10 "${SCHEME}://${HOST}/server/api" 2>/dev/null)

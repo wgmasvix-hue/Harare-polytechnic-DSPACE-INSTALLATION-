@@ -16,6 +16,7 @@ set -euo pipefail
 
 # ---- Config (auto-detected or from environment) ----
 SERVER_IP=$(curl -sf https://api.ipify.org 2>/dev/null || hostname -I | awk '{print $1}')
+PUBLIC_HOST="${SERVER_HOST:-$SERVER_IP}"
 DB_PASS="${DB_PASS:-}"
 ADMIN_EMAIL="${ADMIN_EMAIL:-}"
 ADMIN_PASS="${ADMIN_PASS:-}"
@@ -29,7 +30,7 @@ die() { echo -e "${R}  ✗ $1${N}"; exit 1; }
 echo ""
 echo "╔══════════════════════════════════════════════════════╗"
 echo "║  Harare Polytechnic — DSpace 7.6 Auto-Deploy        ║"
-echo "║  Server: $SERVER_IP                          ║"
+echo "║  Server: $PUBLIC_HOST                        ║"
 echo "╚══════════════════════════════════════════════════════╝"
 
 [ -n "$DB_PASS" ] || die "Set DB_PASS before running this script"
@@ -65,7 +66,11 @@ ok "Files ready in $INSTALL_DIR"
 # ---- 4. Write .env ----
 log "Writing configuration..."
 cat > .env <<ENV
-SERVER_HOST=${SERVER_IP}
+SERVER_HOST=${PUBLIC_HOST}
+PUBLIC_PROTOCOL=http
+DSPACE_UI_SSL=false
+DSPACE_REST_SSL=false
+DSPACE_REST_PORT=80
 DSPACE_DB_PASSWORD=${DB_PASS}
 DSPACE_ADMIN_EMAIL=${ADMIN_EMAIL}
 DSPACE_ADMIN_PASS=${ADMIN_PASS}
@@ -73,11 +78,14 @@ SMTP_HOST=localhost
 HANDLE_PREFIX=123456789
 ENV
 
-# Update local.cfg with actual IP and password
-sed -i "s|144\.91\.125\.128|${SERVER_IP}|g;
-        s|192\.168\.26\.3|${SERVER_IP}|g;
-        s|repo\.example\.edu|${SERVER_IP}|g;
-        s|change-this-database-password|${DB_PASS}|g" config/local.cfg
+# Update local.cfg with actual host and password
+sed -i \
+    -e "s|^dspace\\.hostname = .*|dspace.hostname = ${PUBLIC_HOST}|" \
+    -e "s|^dspace\\.server\\.url = .*|dspace.server.url = http://${PUBLIC_HOST}/server|" \
+    -e "s|^dspace\\.ui\\.url = .*|dspace.ui.url = http://${PUBLIC_HOST}|" \
+    -e "s|^oai\\.url = .*|oai.url = http://${PUBLIC_HOST}/server/oai/request|" \
+    -e "s|^db\\.password = .*|db.password = ${DB_PASS}|" \
+    config/local.cfg
 ok ".env and local.cfg configured"
 
 # ---- 5. UFW firewall ----
@@ -139,13 +147,20 @@ echo "╔═══════════════════════�
 echo "║  INSTALLATION COMPLETE!                             ║"
 echo "╠══════════════════════════════════════════════════════╣"
 echo "║                                                     ║"
-echo "║  Open in browser:  http://${SERVER_IP}/          ║"
-echo "║  Admin login:      http://${SERVER_IP}/login     ║"
+echo "║  Open in browser:  http://${PUBLIC_HOST}/        ║"
+echo "║  Admin login:      http://${PUBLIC_HOST}/login   ║"
 echo "║  Admin email:      ${ADMIN_EMAIL}     ║"
 echo "║                                                     ║"
 echo "║  Setup faculties:                                   ║"
 echo "║    cd /opt/dspace-install                          ║"
 echo "║    bash scripts/10-setup-collections.sh            ║"
+if [[ ! "$PUBLIC_HOST" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+echo "║                                                     ║"
+echo "║  Then enable HTTPS:                                 ║"
+echo "║    cd /opt/dspace-install && make ssl              ║"
+echo "║    Choose Let's Encrypt for ${PUBLIC_HOST}         ║"
+echo "║    make verify HOST=${PUBLIC_HOST}                 ║"
+fi
 echo "║                                                     ║"
 echo "║  Service commands:                                  ║"
 echo "║    docker compose ps         (status)              ║"

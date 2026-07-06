@@ -19,6 +19,8 @@ make verify                              # confirms everything works
 
 DSpace will be live at `http://YOUR_SERVER_HOST/`
 
+To publish it on a public domain such as `unifiedrepo.dare.co.zw`, point DNS to the VPS IP, set `SERVER_HOST` in `.env` to that hostname, run `make ssl`, choose **Let's Encrypt**, and then rerun `docker compose up -d` plus `make verify HOST=unifiedrepo.dare.co.zw`.
+
 ---
 
 ## Problem: SSH Not Working
@@ -157,6 +159,24 @@ SMTP_HOST=mail.example.edu     # email server
 ```
 
 Main DSpace config: `config/local.cfg`
+
+If you are moving from an IP-based deployment to a public HTTPS hostname, update:
+
+```bash
+SERVER_HOST=unifiedrepo.dare.co.zw
+PUBLIC_PROTOCOL=https
+DSPACE_UI_SSL=true
+DSPACE_REST_SSL=true
+DSPACE_REST_PORT=443
+```
+
+Then run:
+
+```bash
+cd /opt/dspace-install
+docker compose up -d
+make verify HOST=unifiedrepo.dare.co.zw
+```
 
 ---
 

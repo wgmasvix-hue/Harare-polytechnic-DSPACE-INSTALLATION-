@@ -31,7 +31,7 @@ help:
 	@echo "  MAINTENANCE"
 	@echo "    make backup           Run manual backup"
 	@echo "    make reindex          Rebuild Solr search index"
-	@echo "    make ssl              Setup HTTPS (self-signed cert)"
+	@echo "    make ssl              Setup HTTPS (self-signed or Let's Encrypt)"
 	@echo "    make clean            Remove containers and volumes (CAUTION)"
 	@echo ""
 

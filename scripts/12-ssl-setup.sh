@@ -75,6 +75,11 @@ case "$SSL_OPTION" in
     # ---- Let's Encrypt ----
     DOMAIN="${1:-}"
     [ -z "$DOMAIN" ] && read -rp "Your public domain name (e.g. repo.example.edu): " DOMAIN
+    [[ "$DOMAIN" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]] && die "Let's Encrypt requires a public domain name, not an IP address"
+    SERVER_HOST="$DOMAIN"
+    if [ -z "${SERVER_NAME:-}" ] || [ "${SERVER_NAME}" = "repository-host" ]; then
+        SERVER_NAME="${DOMAIN%%.*}"
+    fi
 
     log "Installing Certbot..."
     apt-get install -y certbot python3-certbot-nginx 2>/dev/null || \
