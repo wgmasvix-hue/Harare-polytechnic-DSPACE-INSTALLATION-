@@ -45,7 +45,7 @@ This sets up:
 curl -fsSL https://raw.githubusercontent.com/wgmasvix-hue/harare-polytechnic-dspace-installation-/claude/dspace-harare-polytechnic-install-0asotw/scripts/install.sh | sudo bash
 ```
 
-The installer configures `BulawayoPolytechnicRepository.dare.co.zw` as the public hostname and generates strong database and administrator passwords. Save the printed administrator credentials securely. To supply your own values, prefix the command with `SERVER_HOST`, `DSPACE_ADMIN_EMAIL`, `DSPACE_ADMIN_PASS`, and `DSPACE_DB_PASSWORD`.
+The installer configures Caddy with automatic HTTPS for `BulawayoPolytechnicRepository.dare.co.zw` and generates strong database and administrator passwords. Save the printed administrator credentials securely. To supply your own values, prefix the command with `SERVER_HOST`, `DSPACE_ADMIN_EMAIL`, `DSPACE_ADMIN_PASS`, and `DSPACE_DB_PASSWORD`.
 
 Installation takes **10–20 minutes** (mostly pulling Docker images).
 
@@ -155,5 +155,4 @@ docker system prune -f         # remove unused images
 ```bash
 docker compose logs -f dspace-backend    # backend errors
 docker compose logs -f dspace-frontend   # UI errors
-docker compose logs -f dspace-nginx      # nginx errors
 ```

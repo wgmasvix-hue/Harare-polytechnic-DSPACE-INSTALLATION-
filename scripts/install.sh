@@ -22,10 +22,10 @@ if ! command -v docker >/dev/null 2>&1; then
 fi
 systemctl enable --now docker
 docker compose version >/dev/null 2>&1 || apt-get install -y -qq docker-compose-plugin
-
-if ss -ltn '( sport = :80 )' | grep -q LISTEN; then
-  die "Port 80 is already in use. Stop the service using it before installing DSpace."
+if ! command -v caddy >/dev/null 2>&1; then
+  apt-get install -y -qq caddy
 fi
+systemctl enable --now caddy
 
 log "Downloading DSpace configuration"
 BRANCH="${BRANCH:-$(git ls-remote --symref "$REPO_URL" HEAD | awk '/^ref:/ {sub("refs/heads/", "", $2); print $2; exit}')}"
@@ -59,6 +59,24 @@ EOF
     "$DSPACE_ADMIN_EMAIL" "$DSPACE_ADMIN_PASS"
 fi
 
+log "Configuring Caddy"
+SERVER_HOST="$(sed -n 's/^SERVER_HOST=//p' .env | head -n 1)"
+[ -n "$SERVER_HOST" ] || die ".env must contain SERVER_HOST"
+mkdir -p /etc/caddy/Caddyfile.d
+cat >/etc/caddy/Caddyfile.d/dspace.caddy <<EOF
+${SERVER_HOST} {
+    encode zstd gzip
+
+    @dspace_api path /server /server/*
+    reverse_proxy @dspace_api 127.0.0.1:8080
+    reverse_proxy 127.0.0.1:4000
+}
+EOF
+grep -qF 'import /etc/caddy/Caddyfile.d/*.caddy' /etc/caddy/Caddyfile ||
+  printf '\nimport /etc/caddy/Caddyfile.d/*.caddy\n' >>/etc/caddy/Caddyfile
+caddy validate --config /etc/caddy/Caddyfile
+systemctl reload caddy
+
 log "Validating and starting DSpace 9.3"
 docker compose config --quiet
 docker compose pull
@@ -85,4 +103,4 @@ else
   printf 'Administrator account was not created (it may already exist).\n' >&2
 fi
 
-printf '\nDSpace 9.3 is available at http://%s/\n' "$SERVER_HOST"
+printf '\nDSpace 9.3 is available at https://%s/\n' "$SERVER_HOST"

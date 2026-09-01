@@ -56,7 +56,7 @@ ssl:
 start:
 	@echo "Starting DSpace services..."
 	@docker compose up -d 2>/dev/null || \
-	 (systemctl start postgresql solr tomcat dspace-ui nginx && echo "Services started")
+	 (systemctl start postgresql solr tomcat dspace-ui caddy && echo "Services started")
 	@echo "DSpace is at http://$(HOST)/"
 
 stop:
@@ -67,12 +67,12 @@ stop:
 restart:
 	@echo "Restarting DSpace services..."
 	@docker compose restart 2>/dev/null || \
-	 (systemctl restart tomcat dspace-ui solr nginx && echo "Restarted")
+	 (systemctl restart tomcat dspace-ui solr caddy && echo "Restarted")
 
 status:
 	@echo "=== DSpace Service Status ==="
 	@docker compose ps 2>/dev/null || \
-	 (systemctl status postgresql solr tomcat dspace-ui nginx --no-pager -l)
+	 (systemctl status postgresql solr tomcat dspace-ui caddy --no-pager -l)
 
 logs:
 	@docker compose logs -f --tail=50 2>/dev/null || \

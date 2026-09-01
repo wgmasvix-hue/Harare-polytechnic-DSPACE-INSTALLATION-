@@ -13,7 +13,7 @@ On an Ubuntu-based Contabo VPS, run this as `root` (or through `sudo`):
 curl -fsSL https://raw.githubusercontent.com/wgmasvix-hue/harare-polytechnic-dspace-installation-/claude/dspace-harare-polytechnic-install-0asotw/scripts/install.sh | sudo bash
 ```
 
-Before running it, create an `A` record for `BulawayoPolytechnicRepository.dare.co.zw` pointing to `157.173.127.168`. The installer configures that hostname, creates strong random credentials, downloads this repository, and starts DSpace. It prints the generated administrator password once; save it securely.
+Before running it, create an `A` record for `BulawayoPolytechnicRepository.dare.co.zw` pointing to `157.173.127.168`. The installer configures Caddy with automatic HTTPS, creates strong random credentials, downloads this repository, and starts DSpace. It prints the generated administrator password once; save it securely.
 
 After it completes:
 
@@ -88,7 +88,7 @@ bash scripts/03-configure-database.sh
 bash scripts/04-install-dspace.sh       # ~30 min (Maven build)
 bash scripts/05-install-angular-ui.sh
 bash scripts/06-create-admin.sh
-bash scripts/07-configure-nginx.sh
+bash scripts/07-configure-nginx.sh  # legacy native installation only
 bash scripts/08-scheduled-tasks.sh
 bash scripts/10-setup-collections.sh
 ```
@@ -106,7 +106,7 @@ bash scripts/10-setup-collections.sh
 | `04-install-dspace.sh` | Build and install DSpace backend |
 | `05-install-angular-ui.sh` | Install Angular frontend |
 | `06-create-admin.sh` | Create admin account |
-| `07-configure-nginx.sh` | Nginx reverse proxy |
+| `07-configure-nginx.sh` | Legacy native-install Nginx configuration (not used by Docker deployment) |
 | `08-scheduled-tasks.sh` | Cron jobs (indexing, backups) |
 | `09-docker-install.sh` | All-in-one Docker installer |
 | `10-setup-collections.sh` | Create HP faculty/collection structure |
@@ -140,7 +140,7 @@ make ssl               # setup HTTPS
 Users (LAN / Internet)
         │
         ▼
-   Nginx  :80/:443        ← entry point
+   Caddy  :80/:443        ← HTTPS entry point
    ├── /           →  Angular UI   (port 4000)
    ├── /server     →  REST API     (port 8080, Tomcat)
    └── internal:
