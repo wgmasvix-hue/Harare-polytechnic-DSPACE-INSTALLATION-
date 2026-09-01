@@ -1,5 +1,5 @@
 # Contabo VPS Deployment Guide
-## Harare Polytechnic DSpace 7.6
+## Harare Polytechnic DSpace 9.3
 
 **VM Specs:** Ubuntu 22.04 LTS | 8 GB RAM | Contabo VPS M  
 **Access:** SSH via public IP
@@ -41,13 +41,10 @@ This sets up:
 ## Step 4 — One-Command DSpace Install
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/wgmasvix-hue/harare-polytechnic-dspace-installation-/claude/dspace-harare-polytechnic-install-0asotw/scripts/14-contabo-deploy.sh | bash
+curl -fsSL https://raw.githubusercontent.com/wgmasvix-hue/harare-polytechnic-dspace-installation-/claude/dspace-harare-polytechnic-install-0asotw/scripts/install.sh | sudo bash
 ```
 
-You will be prompted for:
-- Your Contabo public IP (auto-detected)
-- Database password
-- Admin email and password
+The installer detects the public IP and generates strong database and administrator passwords. Save the printed administrator credentials securely. To supply your own values, prefix the command with `SERVER_HOST`, `DSPACE_ADMIN_EMAIL`, `DSPACE_ADMIN_PASS`, and `DSPACE_DB_PASSWORD`.
 
 Installation takes **10–20 minutes** (mostly pulling Docker images).
 

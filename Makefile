@@ -1,5 +1,5 @@
 # =================================================================
-#  Harare Polytechnic DSpace 7.6 — Makefile
+#  Harare Polytechnic DSpace 9.3 — Makefile
 #  Usage:  make <target>
 #  Run on hrepolyREP (192.168.26.3) as root
 # =================================================================
@@ -42,7 +42,7 @@ check:
 	@bash scripts/01-precheck.sh
 
 install:
-	@bash scripts/09-docker-install.sh
+	@bash scripts/install.sh
 
 setup-collections:
 	@bash scripts/10-setup-collections.sh

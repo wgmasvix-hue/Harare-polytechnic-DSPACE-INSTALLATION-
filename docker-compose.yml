@@ -1,37 +1,27 @@
-version: '3.8'
-
-# =================================================================
-#  Harare Polytechnic DSpace 7.6 — Docker Compose
-#  Run:  docker compose up -d
-#  UI:   http://<SERVER_HOST>/
-#
-#  Set SERVER_HOST in .env or environment before running:
-#    echo "SERVER_HOST=144.91.125.128" > .env
-# =================================================================
+name: harare-dspace
 
 networks:
   dspace:
-    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.23.0.0/16
 
 volumes:
   pgdata:
   solrdata:
   assetstore:
-  dspace-config:
 
 services:
-
-  # ---- PostgreSQL Database ----
   postgres:
     image: postgres:15-alpine
     container_name: dspace-db
     restart: unless-stopped
-    networks:
-      - dspace
+    networks: [dspace]
     environment:
+      PGDATA: /var/lib/postgresql/data
       POSTGRES_DB: dspace
       POSTGRES_USER: dspace
-      POSTGRES_PASSWORD: ${DSPACE_DB_PASSWORD:-DSpaceHarare2024}
+      POSTGRES_PASSWORD: ${DSPACE_DB_PASSWORD:?Set DSPACE_DB_PASSWORD in .env}
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./config/postgres-init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
@@ -41,23 +31,25 @@ services:
       timeout: 5s
       retries: 10
 
-  # ---- Apache Solr (DSpace image — has built-in DSpace configsets) ----
   solr:
-    image: dspace/dspace-solr:dspace-7.6
+    image: dspace/dspace-solr:dspace-9.3
     container_name: dspace-solr
     restart: unless-stopped
-    networks:
-      - dspace
+    networks: [dspace]
     volumes:
-      - solrdata:/var/solr
-    command: >
-      bash -c "
-        precreate-core search     /opt/solr/server/solr/search     2>/dev/null || true
-        precreate-core statistics /opt/solr/server/solr/statistics 2>/dev/null || true
-        precreate-core authority  /opt/solr/server/solr/authority  2>/dev/null || true
-        precreate-core oai        /opt/solr/server/solr/oai        2>/dev/null || true
-        exec solr-foreground
-      "
+      - solrdata:/var/solr/data
+    user: root
+    entrypoint:
+      - /bin/bash
+      - -c
+      - |
+        init-var-solr
+        for core in authority oai search statistics qaevent suggestion; do
+          precreate-core "$core" "/opt/solr/server/solr/configsets/$core"
+          cp -r "/opt/solr/server/solr/configsets/$core/." "$core"
+        done
+        chown -R solr:solr /var/solr
+        exec runuser -u solr -- solr-foreground
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8983/solr/"]
       interval: 15s
@@ -67,35 +59,41 @@ services:
     ports:
       - "127.0.0.1:8983:8983"
 
-  # ---- DSpace Backend (REST API / Tomcat) ----
   dspace:
-    image: dspace/dspace:dspace-7.6
+    image: dspace/dspace:dspace-9.3
     container_name: dspace-backend
     restart: unless-stopped
-    networks:
-      - dspace
+    networks: [dspace]
     depends_on:
       postgres:
         condition: service_healthy
       solr:
         condition: service_healthy
     environment:
-      db__P__url: "jdbc:postgresql://postgres:5432/dspace"
+      db__P__url: jdbc:postgresql://postgres:5432/dspace
       db__P__username: dspace
-      db__P__password: ${DSPACE_DB_PASSWORD:-DSpaceHarare2024}
-      solr__P__server: "http://solr:8983/solr"
-      dspace__P__server__url: "http://${SERVER_HOST:-144.91.125.128}/server"
-      dspace__P__ui__url: "http://${SERVER_HOST:-144.91.125.128}"
-      dspace__P__name: "Harare Polytechnic Institutional Repository"
-      dspace__P__hostname: "${SERVER_HOST:-144.91.125.128}"
-      mail__P__server: "${SMTP_HOST:-localhost}"
-      mail__P__from__address: "dspace@hrepoly.ac.zw"
-      mail__P__admin: "library@hrepoly.ac.zw"
-      handle__P__prefix: "${HANDLE_PREFIX:-123456789}"
+      db__P__password: ${DSPACE_DB_PASSWORD:?Set DSPACE_DB_PASSWORD in .env}
+      solr__P__server: http://solr:8983/solr
+      dspace__P__server__P__url: http://${SERVER_HOST:?Set SERVER_HOST in .env}/server
+      dspace__P__server__P__ssr__P__url: http://dspace:8080/server
+      dspace__P__ui__P__url: http://${SERVER_HOST:?Set SERVER_HOST in .env}
+      dspace__P__name: ${DSPACE_SITE_NAME:-Harare Polytechnic Institutional Repository}
+      dspace__P__hostname: ${SERVER_HOST:?Set SERVER_HOST in .env}
+      proxies__P__trusted__P__ipranges: 172.23.0
+      mail__P__server: ${SMTP_HOST:-localhost}
+      mail__P__from__address: ${DSPACE_FROM_EMAIL:-dspace@hrepoly.ac.zw}
+      mail__P__admin: ${DSPACE_ADMIN_EMAIL:?Set DSPACE_ADMIN_EMAIL in .env}
+      handle__P__prefix: ${HANDLE_PREFIX:-123456789}
+      LOGGING_CONFIG: /dspace/config/log4j2-container.xml
     volumes:
       - assetstore:/dspace/assetstore
-      - dspace-config:/dspace/config
       - ./config/local.cfg:/dspace/config/local.cfg:ro
+    entrypoint:
+      - /bin/bash
+      - -c
+      - |
+        /dspace/bin/dspace database migrate
+        exec java -jar /dspace/webapps/server-boot.jar
     ports:
       - "127.0.0.1:8080:8080"
     healthcheck:
@@ -105,35 +103,33 @@ services:
       retries: 20
       start_period: 180s
 
-  # ---- DSpace Angular UI ----
   dspace-ui:
-    image: dspace/dspace-angular:dspace-7.6
+    image: dspace/dspace-angular:dspace-9.3-dist
     container_name: dspace-frontend
     restart: unless-stopped
-    networks:
-      - dspace
+    networks: [dspace]
     depends_on:
       dspace:
         condition: service_healthy
     environment:
       DSPACE_UI_SSL: "false"
-      DSPACE_UI_HOST: "${SERVER_HOST:-144.91.125.128}"
-      DSPACE_UI_PORT: "4000"
-      DSPACE_UI_NAMESPACE: "/"
+      DSPACE_UI_HOST: ${SERVER_HOST:?Set SERVER_HOST in .env}
+      DSPACE_UI_PORT: "80"
+      DSPACE_UI_NAMESPACE: /
+      DSPACE_UI_BASEURL: http://${SERVER_HOST:?Set SERVER_HOST in .env}
       DSPACE_REST_SSL: "false"
-      DSPACE_REST_HOST: "${SERVER_HOST:-144.91.125.128}"
+      DSPACE_REST_HOST: ${SERVER_HOST:?Set SERVER_HOST in .env}
       DSPACE_REST_PORT: "80"
-      DSPACE_REST_NAMESPACE: "/server"
+      DSPACE_REST_NAMESPACE: /server
+      DSPACE_REST_SSRBASEURL: http://dspace:8080/server
     ports:
       - "127.0.0.1:4000:4000"
 
-  # ---- Nginx Reverse Proxy + Branding ----
   nginx:
     image: nginx:alpine
     container_name: dspace-nginx
     restart: unless-stopped
-    networks:
-      - dspace
+    networks: [dspace]
     depends_on:
       - dspace
       - dspace-ui
@@ -142,7 +138,6 @@ services:
       - ./config/branding:/etc/nginx/branding:ro
     ports:
       - "80:80"
-      - "443:443"
     healthcheck:
       test: ["CMD", "wget", "-q", "--spider", "http://localhost/"]
       interval: 30s

@@ -1,5 +1,5 @@
 # Harare Polytechnic Institutional Repository
-## DSpace 7.6 — Complete Installation Package
+## DSpace 9.3 — Complete Installation Package
 
 **Server:** `hrepolyREP` | **IP:** `192.168.26.3` (Static LAN) | **OS:** Linux
 
@@ -7,14 +7,20 @@
 
 ## Quick Start
 
+On an Ubuntu-based Contabo VPS, run this as `root` (or through `sudo`):
+
 ```bash
-# On the server (via Cockpit terminal at https://192.168.26.3/)
-git clone https://github.com/wgmasvix-hue/harare-polytechnic-dspace-installation-.git /opt/dspace-install
+curl -fsSL https://raw.githubusercontent.com/wgmasvix-hue/harare-polytechnic-dspace-installation-/claude/dspace-harare-polytechnic-install-0asotw/scripts/install.sh | sudo bash
+```
+
+The installer installs Docker, detects the public IP, creates strong random credentials, downloads this repository, and starts DSpace. It prints the generated administrator password once; save it securely.
+
+After it completes:
+
+```bash
 cd /opt/dspace-install
-cp .env.example .env && nano .env        # set passwords
-make install                             # installs Docker + DSpace
-make setup-collections                   # creates all HP faculties
-make verify                              # confirms everything works
+make setup-collections
+make verify
 ```
 
 DSpace will be live at `http://192.168.26.3/`
@@ -61,12 +67,12 @@ Harare Polytechnic Institutional Repository
 
 ## Installation Methods
 
-### Method A — Docker (Recommended, Easiest)
+### Method A — Docker (Recommended, one command on Contabo)
 
 Requires Docker. All dependencies run in containers.
 
 ```bash
-make install           # ~10 minutes (downloads images)
+curl -fsSL https://raw.githubusercontent.com/wgmasvix-hue/harare-polytechnic-dspace-installation-/claude/dspace-harare-polytechnic-install-0asotw/scripts/install.sh | sudo bash
 make setup-collections # creates HP community structure
 make verify            # health check
 ```
@@ -241,7 +247,7 @@ Automated backups: nightly at 03:00 via `/etc/cron.d/dspace`
 
 | Resource | URL |
 |---|---|
-| DSpace 7.x Docs | https://wiki.lyrasis.org/display/DSDOC7x/ |
+| DSpace 9.x Docs | https://wiki.lyrasis.org/spaces/DSDOC9x/ |
 | DSpace Community | https://groups.google.com/g/dspace-tech |
 | DSpace GitHub | https://github.com/DSpace/DSpace |
 | OpenDOAR Registration | https://www.openDOAR.org |
