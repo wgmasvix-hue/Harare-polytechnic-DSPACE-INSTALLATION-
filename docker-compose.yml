@@ -56,9 +56,6 @@ services:
       timeout: 10s
       retries: 15
       start_period: 30s
-    ports:
-      - "127.0.0.1:8983:8983"
-
   dspace:
     image: dspace/dspace:dspace-9.3
     container_name: dspace-backend

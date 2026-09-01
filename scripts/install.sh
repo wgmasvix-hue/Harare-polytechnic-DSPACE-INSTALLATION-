@@ -4,6 +4,7 @@ set -euo pipefail
 
 INSTALL_DIR=/opt/dspace-install
 REPO_URL=https://github.com/wgmasvix-hue/harare-polytechnic-dspace-installation-.git
+BRANCH="${BRANCH:-copilot/upgrade-to-dspace-93}"
 
 log() { printf '\n==> %s\n' "$*"; }
 die() { printf 'ERROR: %s\n' "$*" >&2; exit 1; }
@@ -28,8 +29,6 @@ fi
 systemctl enable --now caddy
 
 log "Downloading DSpace configuration"
-BRANCH="${BRANCH:-$(git ls-remote --symref "$REPO_URL" HEAD | awk '/^ref:/ {sub("refs/heads/", "", $2); print $2; exit}')}"
-[ -n "$BRANCH" ] || die "Could not determine the repository default branch"
 if [ -d "$INSTALL_DIR/.git" ]; then
   git -C "$INSTALL_DIR" fetch --depth=1 origin "$BRANCH"
   git -C "$INSTALL_DIR" checkout -q FETCH_HEAD
@@ -79,6 +78,7 @@ systemctl reload caddy
 
 log "Validating and starting DSpace 9.3"
 docker compose config --quiet
+docker compose down --remove-orphans || true
 docker compose pull
 docker compose up -d
 
