@@ -1,5 +1,5 @@
 # Contabo VPS Deployment Guide
-## Harare Polytechnic DSpace 9.3
+## Bulawayo Polytechnic Repository — DSpace 9.3
 
 **VM Specs:** Ubuntu 22.04 LTS | 8 GB RAM | Contabo VPS M  
 **Access:** SSH via public IP
@@ -8,8 +8,9 @@
 
 ## Step 1 — Get Your Contabo IP
 
-Log into Contabo Customer Panel → your VPS IP is shown on the dashboard.  
-Example: `85.215.xxx.xxx`
+Log into Contabo Customer Panel → your VPS IP is shown on the dashboard: `157.173.127.168`.
+
+Create an `A` record for `BulawayoPolytechnicRepository.dare.co.zw` that points to this IP before installation.
 
 ---
 
@@ -44,7 +45,7 @@ This sets up:
 curl -fsSL https://raw.githubusercontent.com/wgmasvix-hue/harare-polytechnic-dspace-installation-/claude/dspace-harare-polytechnic-install-0asotw/scripts/install.sh | sudo bash
 ```
 
-The installer detects the public IP and generates strong database and administrator passwords. Save the printed administrator credentials securely. To supply your own values, prefix the command with `SERVER_HOST`, `DSPACE_ADMIN_EMAIL`, `DSPACE_ADMIN_PASS`, and `DSPACE_DB_PASSWORD`.
+The installer configures `BulawayoPolytechnicRepository.dare.co.zw` as the public hostname and generates strong database and administrator passwords. Save the printed administrator credentials securely. To supply your own values, prefix the command with `SERVER_HOST`, `DSPACE_ADMIN_EMAIL`, `DSPACE_ADMIN_PASS`, and `DSPACE_DB_PASSWORD`.
 
 Installation takes **10–20 minutes** (mostly pulling Docker images).
 

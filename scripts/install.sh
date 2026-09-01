@@ -41,7 +41,7 @@ cd "$INSTALL_DIR"
 
 if [ ! -f .env ]; then
   umask 077
-  SERVER_HOST="${SERVER_HOST:-$(curl -4fsS --connect-timeout 5 https://api.ipify.org || hostname -I | awk '{print $1}')}"
+  SERVER_HOST="${SERVER_HOST:-BulawayoPolytechnicRepository.dare.co.zw}"
   [ -n "$SERVER_HOST" ] || die "Could not detect the public IP; rerun with SERVER_HOST=your.domain.example"
   DSPACE_DB_PASSWORD="${DSPACE_DB_PASSWORD:-$(random_password)}"
   DSPACE_ADMIN_EMAIL="${DSPACE_ADMIN_EMAIL:-admin@${SERVER_HOST}}"
@@ -51,7 +51,7 @@ SERVER_HOST=${SERVER_HOST}
 DSPACE_DB_PASSWORD=${DSPACE_DB_PASSWORD}
 DSPACE_ADMIN_EMAIL=${DSPACE_ADMIN_EMAIL}
 DSPACE_ADMIN_PASS=${DSPACE_ADMIN_PASS}
-DSPACE_SITE_NAME=${DSPACE_SITE_NAME:-Harare Polytechnic Institutional Repository}
+DSPACE_SITE_NAME=${DSPACE_SITE_NAME:-Bulawayo Polytechnic Repository}
 SMTP_HOST=${SMTP_HOST:-localhost}
 HANDLE_PREFIX=${HANDLE_PREFIX:-123456789}
 EOF

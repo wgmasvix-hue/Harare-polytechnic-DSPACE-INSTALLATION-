@@ -1,4 +1,4 @@
-# Harare Polytechnic Institutional Repository
+# Bulawayo Polytechnic Repository
 ## DSpace 9.3 — Complete Installation Package
 
 **Server:** `hrepolyREP` | **IP:** `192.168.26.3` (Static LAN) | **OS:** Linux
@@ -13,7 +13,7 @@ On an Ubuntu-based Contabo VPS, run this as `root` (or through `sudo`):
 curl -fsSL https://raw.githubusercontent.com/wgmasvix-hue/harare-polytechnic-dspace-installation-/claude/dspace-harare-polytechnic-install-0asotw/scripts/install.sh | sudo bash
 ```
 
-The installer installs Docker, detects the public IP, creates strong random credentials, downloads this repository, and starts DSpace. It prints the generated administrator password once; save it securely.
+Before running it, create an `A` record for `BulawayoPolytechnicRepository.dare.co.zw` pointing to `157.173.127.168`. The installer configures that hostname, creates strong random credentials, downloads this repository, and starts DSpace. It prints the generated administrator password once; save it securely.
 
 After it completes:
 

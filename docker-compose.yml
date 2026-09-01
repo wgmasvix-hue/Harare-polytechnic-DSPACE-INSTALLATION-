@@ -45,8 +45,8 @@ services:
       - |
         init-var-solr
         for core in authority oai search statistics qaevent suggestion; do
-          precreate-core "$core" "/opt/solr/server/solr/configsets/$core"
-          cp -r "/opt/solr/server/solr/configsets/$core/." "$core"
+          precreate-core "$$core" "/opt/solr/server/solr/configsets/$$core"
+          cp -r "/opt/solr/server/solr/configsets/$$core/." "$$core"
         done
         chown -R solr:solr /var/solr
         exec runuser -u solr -- solr-foreground
@@ -77,7 +77,7 @@ services:
       dspace__P__server__P__url: http://${SERVER_HOST:?Set SERVER_HOST in .env}/server
       dspace__P__server__P__ssr__P__url: http://dspace:8080/server
       dspace__P__ui__P__url: http://${SERVER_HOST:?Set SERVER_HOST in .env}
-      dspace__P__name: ${DSPACE_SITE_NAME:-Harare Polytechnic Institutional Repository}
+      dspace__P__name: ${DSPACE_SITE_NAME:-Bulawayo Polytechnic Repository}
       dspace__P__hostname: ${SERVER_HOST:?Set SERVER_HOST in .env}
       proxies__P__trusted__P__ipranges: 172.23.0
       mail__P__server: ${SMTP_HOST:-localhost}
