@@ -1,5 +1,5 @@
 #!/bin/bash
-# Step 2: Install all DSpace 7.6 dependencies
+# Step 2: Install all DSpace 9 dependencies
 # Run as root on hrepolyREP (192.168.26.3)
 
 set -euo pipefail

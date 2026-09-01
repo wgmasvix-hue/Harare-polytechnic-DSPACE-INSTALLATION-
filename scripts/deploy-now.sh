@@ -1,6 +1,6 @@
 #!/bin/bash
 # =================================================================
-#  ONE-COMMAND DSpace 7.6 Deploy — Harare Polytechnic
+#  ONE-COMMAND DSpace 9 Deploy — Harare Polytechnic
 #  Fully non-interactive. Works on Contabo VPS or local server.
 #
 #  USAGE — Contabo VPS (auto-detects public IP):
@@ -33,7 +33,7 @@ die()  { echo -e "${R}  ✗ $1${N}"; exit 1; }
 
 echo ""
 echo "╔══════════════════════════════════════════════════════╗"
-echo "║  Harare Polytechnic — DSpace 7.6 Auto-Deploy        ║"
+echo "║  Harare Polytechnic — DSpace 9 Auto-Deploy        ║"
 printf "║  Server IP: %-41s║\n" "$SERVER_IP"
 echo "╚══════════════════════════════════════════════════════╝"
 

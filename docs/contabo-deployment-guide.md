@@ -1,5 +1,5 @@
 # Contabo VPS Deployment Guide
-## Harare Polytechnic DSpace 7.6
+## Harare Polytechnic DSpace 9
 
 **VM Specs:** Ubuntu 22.04 LTS | 8 GB RAM | Contabo VPS M  
 **Access:** SSH via public IP

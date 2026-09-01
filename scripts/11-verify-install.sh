@@ -12,7 +12,7 @@ info()  { echo -e "       $1"; }
 HOST="${1:-192.168.26.3}"
 
 echo "======================================================"
-echo "  DSpace 7.6 — Installation Verification"
+echo "  DSpace 9 — Installation Verification"
 echo "  Testing: http://${HOST}"
 echo "  Date: $(date)"
 echo "======================================================"

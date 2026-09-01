@@ -1,7 +1,5 @@
-version: '3.8'
-
 # =================================================================
-#  Harare Polytechnic DSpace 7.6 — Docker Compose
+#  Harare Polytechnic DSpace 9 — Docker Compose
 #  Run:  docker compose up -d
 #  UI:   http://<SERVER_HOST>/
 #
@@ -43,7 +41,7 @@ services:
 
   # ---- Apache Solr (DSpace image — has built-in DSpace configsets) ----
   solr:
-    image: dspace/dspace-solr:dspace-7.6
+    image: dspace/dspace-solr:dspace-9.0
     container_name: dspace-solr
     restart: unless-stopped
     networks:
@@ -69,7 +67,7 @@ services:
 
   # ---- DSpace Backend (REST API / Tomcat) ----
   dspace:
-    image: dspace/dspace:dspace-7.6
+    image: dspace/dspace:dspace-9.0
     container_name: dspace-backend
     restart: unless-stopped
     networks:
@@ -107,7 +105,7 @@ services:
 
   # ---- DSpace Angular UI ----
   dspace-ui:
-    image: dspace/dspace-angular:dspace-7.6
+    image: dspace/dspace-angular:dspace-9.0
     container_name: dspace-frontend
     restart: unless-stopped
     networks:

@@ -1,6 +1,6 @@
 #!/bin/bash
 # =================================================================
-#  DSpace 7.6 — Universal Installer — Harare Polytechnic
+#  DSpace 9 — Universal Installer — Harare Polytechnic
 #  Ubuntu 20.04 / 22.04 / 24.04 | Contabo VPS | Local LAN server
 #
 #  Quick install (non-interactive):
@@ -35,7 +35,7 @@ done
 
 # ── Defaults ─────────────────────────────────────────────────────
 DIR="/opt/dspace"
-IMAGES_TAG="dspace-7.6.3"
+IMAGES_TAG="dspace-9.0"
 AUTO_IP=$(curl -sf --connect-timeout 5 https://api.ipify.org 2>/dev/null || hostname -I | awk '{print $1}')
 
 SERVER_IP="${SERVER_IP:-$AUTO_IP}"
@@ -47,7 +47,7 @@ SITE_NAME="${SITE_NAME:-Harare Polytechnic Institutional Repository}"
 # ── Banner ───────────────────────────────────────────────────────
 echo ""
 echo -e "${W}╔══════════════════════════════════════════════════════╗${N}"
-echo -e "${W}║   DSpace 7.6 — Harare Polytechnic                   ║${N}"
+echo -e "${W}║   DSpace 9 — Harare Polytechnic                   ║${N}"
 echo -e "${W}║   Universal Installer                                ║${N}"
 echo -e "${W}╚══════════════════════════════════════════════════════╝${N}"
 echo ""

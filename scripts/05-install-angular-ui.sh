@@ -8,7 +8,7 @@ BLUE='\033[0;34m'; GREEN='\033[0;32m'; NC='\033[0m'
 log() { echo -e "${BLUE}[$(date +%H:%M:%S)]${NC} $1"; }
 ok()  { echo -e "${GREEN}[OK]${NC} $1"; }
 
-DSPACE_VERSION="7.6.3"
+DSPACE_VERSION="9.0"
 UI_DIR="/opt/dspace-ui"
 SERVER_HOSTNAME="${DSPACE_HOSTNAME:-192.168.26.3}"
 NODE_VERSION=18

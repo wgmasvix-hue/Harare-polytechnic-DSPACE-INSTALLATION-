@@ -1,7 +1,7 @@
 #!/bin/bash
 # =================================================================
 #  OPTION B: Docker-based DSpace install (EASIER / FASTER)
-#  Runs DSpace 7.6 via Docker Compose — no manual compiling needed.
+#  Runs DSpace 9 via Docker Compose — no manual compiling needed.
 #  Run as root on hrepolyREP (192.168.26.3)
 # =================================================================
 
@@ -16,7 +16,7 @@ INSTALL_DIR="/opt/dspace-install"
 
 [ "$EUID" -eq 0 ] || die "Run as root"
 
-log "=== DSpace 7.6 Docker Installation — Harare Polytechnic ==="
+log "=== DSpace 9 Docker Installation — Harare Polytechnic ==="
 
 # ---- Install Docker ----
 log "Installing Docker..."

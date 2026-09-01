@@ -13,7 +13,7 @@ log "Configuring DSpace scheduled tasks..."
 
 # Create cron file for dspace user
 cat > /etc/cron.d/dspace <<CRONTAB
-# DSpace 7.6 Scheduled Maintenance Tasks
+# DSpace 9 Scheduled Maintenance Tasks
 # Harare Polytechnic Institutional Repository
 
 DSPACE=${DSPACE_INSTALL}

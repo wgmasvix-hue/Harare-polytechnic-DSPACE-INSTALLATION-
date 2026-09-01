@@ -1,5 +1,5 @@
 # =================================================================
-#  Harare Polytechnic DSpace 7.6 — Makefile
+#  Harare Polytechnic DSpace 9 — Makefile
 #  Usage:  make <target>
 #  Run on hrepolyREP (192.168.26.3) as root
 # =================================================================

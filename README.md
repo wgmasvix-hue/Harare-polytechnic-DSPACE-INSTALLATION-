@@ -1,5 +1,5 @@
 # Harare Polytechnic Institutional Repository
-## DSpace 7.6 — Complete Installation Package
+## DSpace 9 — Complete Installation Package
 
 **Server:** `hrepolyREP` | **IP:** `192.168.26.3` (Static LAN) | **OS:** Linux
 
@@ -7,14 +7,16 @@
 
 ## Quick Start
 
+Clone and install in one command:
+
 ```bash
-# On the server (via Cockpit terminal at https://192.168.26.3/)
-git clone https://github.com/wgmasvix-hue/harare-polytechnic-dspace-installation-.git /opt/dspace-install
-cd /opt/dspace-install
-cp .env.example .env && nano .env        # set passwords
-make install                             # installs Docker + DSpace
-make setup-collections                   # creates all HP faculties
-make verify                              # confirms everything works
+git clone https://github.com/wgmasvix-hue/Harare-polytechnic-DSPACE-INSTALLATION-.git /opt/dspace-install && \
+  cd /opt/dspace-install && \
+  cp .env.example .env && \
+  nano .env && \
+  make install && \
+  make setup-collections && \
+  make verify
 ```
 
 DSpace will be live at `http://192.168.26.3/`

@@ -1,6 +1,6 @@
 #!/bin/bash
 # =================================================================
-#  ChengetAi Deploy — DSpace 7.6 Non-Interactive Installer
+#  ChengetAi Deploy — DSpace 9 Non-Interactive Installer
 #  Called by commander.py with environment variables set.
 #
 #  Environment variables:
@@ -23,7 +23,7 @@ ADMIN_PASS="${ADMIN_PASS:-ChengetAi2026!}"
 SSL_ENABLED="${SSL_ENABLED:-false}"
 DB_PASS="${DB_PASS:-$(tr -dc 'A-Za-z0-9' </dev/urandom | head -c 20)}"
 DIR="/opt/dspace"
-IMAGES_TAG="dspace-7.6.3"
+IMAGES_TAG="dspace-9.0"
 
 # Protocol for DSpace URLs
 [ "$SSL_ENABLED" = "true" ] && PROTO="https" || PROTO="http"
@@ -35,7 +35,7 @@ ok()  { echo "[$(date '+%H:%M:%S')] ✓ $*"; }
 err() { echo "[$(date '+%H:%M:%S')] ✗ $*" >&2; exit 1; }
 
 echo "=================================================="
-echo "  ChengetAi Deploy — DSpace 7.6"
+echo "  ChengetAi Deploy — DSpace 9"
 echo "  Domain:  $DOMAIN"
 echo "  SSL:     $SSL_ENABLED"
 echo "  URL:     $BASE_URL"

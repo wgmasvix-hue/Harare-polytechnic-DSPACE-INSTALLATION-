@@ -1,6 +1,6 @@
 #!/bin/bash
 # ============================================================
-#  HARARE POLYTECHNIC DSPACE 7.6 - MASTER INSTALLER
+#  HARARE POLYTECHNIC DSPACE 9 - MASTER INSTALLER
 #  Run this ONE script to install everything.
 #  Must be run as root on hrepolyREP (192.168.26.3)
 # ============================================================
@@ -21,7 +21,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 echo ""
 echo "=========================================================="
 echo "  HARARE POLYTECHNIC INSTITUTIONAL REPOSITORY"
-echo "  DSpace 7.6 Automated Installation"
+echo "  DSpace 9 Automated Installation"
 echo "  Server: $(hostname) / $(hostname -I | awk '{print $1}')"
 echo "  Date:   $(date)"
 echo "=========================================================="

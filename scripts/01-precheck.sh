@@ -1,5 +1,5 @@
 #!/bin/bash
-# Pre-installation system check for DSpace 7.6
+# Pre-installation system check for DSpace 9
 # Run as root on the target server (hrepolyREP / 192.168.26.3)
 
 RED='\033[0;31m'
@@ -17,7 +17,7 @@ warn()  { echo -e "${YELLOW}[WARN]${NC} $1"; ((WARN++)); }
 info()  { echo -e "       $1"; }
 
 echo "======================================================"
-echo "  DSpace 7.6 Pre-Installation Check"
+echo "  DSpace 9 Pre-Installation Check"
 echo "  Server: $(hostname) / $(hostname -I | awk '{print $1}')"
 echo "  Date:   $(date)"
 echo "======================================================"
@@ -67,7 +67,7 @@ echo "--- Java ---"
 if command -v java &>/dev/null; then
     JAVA_VER=$(java -version 2>&1 | head -1 | grep -oP '(?<=version ")[^"]+')
     JAVA_MAJOR=$(echo "$JAVA_VER" | grep -oP '^\d+' | head -1)
-    [ "$JAVA_MAJOR" -ge 17 ] && pass "Java $JAVA_VER (JDK 17+ required)" || warn "Java $JAVA_VER — DSpace 7.6 requires Java 17"
+    [ "$JAVA_MAJOR" -ge 17 ] && pass "Java $JAVA_VER (JDK 17+ required)" || warn "Java $JAVA_VER — DSpace 9 requires Java 17"
 else
     fail "Java not installed — will be installed by setup script"
 fi

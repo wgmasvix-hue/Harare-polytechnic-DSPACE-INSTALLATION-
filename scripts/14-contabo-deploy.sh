@@ -1,6 +1,6 @@
 #!/bin/bash
 # =================================================================
-#  DSpace 7.6 — Contabo VPS Deployment Script
+#  DSpace 9 — Contabo VPS Deployment Script
 #  Target: Ubuntu 22.04, 8GB RAM, Public IP
 #  Harare Polytechnic Institutional Repository
 #
@@ -28,7 +28,7 @@ PUBLIC_IP=$(curl -sf https://api.ipify.org 2>/dev/null || \
 
 echo ""
 echo "╔══════════════════════════════════════════════════════════════╗"
-echo "║   HARARE POLYTECHNIC — DSpace 7.6 on Contabo VPS           ║"
+echo "║   HARARE POLYTECHNIC — DSpace 9 on Contabo VPS           ║"
 echo "║   OS:  $PRETTY_NAME"
 echo "║   RAM: $(free -h | awk '/^Mem:/{print $2}') total"
 echo "║   IP:  $PUBLIC_IP (detected)"
